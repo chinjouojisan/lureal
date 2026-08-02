@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lureal">
+<title>Lureal</title>
+<style>
+  :root{
+    --void-0:#05060d; --void-1:#080b1a; --void-2:#0c1030;
+    --ink:#e4ecff; --ink-soft:rgba(210,222,255,.62); --ink-faint:rgba(180,196,240,.34);
+    --line:rgba(150,178,255,.16); --glow:#cfe0ff; --gold:#f2c94c;
+    --mincho:"Hiragino Mincho ProN","Yu Mincho","YuMincho",serif;
+    --sans:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{color:var(--ink);font-family:var(--mincho);overflow:hidden;position:fixed;inset:0;
+    -webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none;touch-action:none;
+    background:radial-gradient(120% 85% at 50% 52%, #ffffff 0%, #f5f7fc 68%, #eef1f8 100%);
+    background-attachment:fixed;}
+  body.dark{background:
+      radial-gradient(120% 85% at 50% 56%, #04050c 0%, #070b1e 55%, #0b1236 100%),
+      radial-gradient(100% 70% at 50% -8%, #101a44 0%, transparent 55%),
+      linear-gradient(180deg, var(--void-1) 0%, var(--void-0) 100%);}
+  #gl,#fx{position:fixed;inset:0;width:100%;height:100%;display:block;}
+  #gl{z-index:0;pointer-events:none;}
+  #fx{z-index:1;pointer-events:auto;}
+
+  #whisper{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 7vh);
+    text-align:center;z-index:3;pointer-events:none;font-size:14px;letter-spacing:.28em;
+    color:var(--ink-faint);transition:opacity 1.1s ease;opacity:0;
+    text-shadow:0 0 18px rgba(150,185,255,.4);}
+  #whisper.on{opacity:1;}
+  #flash{position:fixed;inset:0;z-index:5;background:#ffffff;opacity:0;pointer-events:none;}
+  #ending{position:fixed;left:0;right:0;top:44%;transform:translateY(-50%);text-align:center;
+    z-index:6;pointer-events:none;}
+  #ending.on{pointer-events:auto;}
+  #ending-main{font-size:16px;letter-spacing:.3em;color:#161a2e;opacity:0;transition:opacity 3s ease;}
+  #ending-sub{margin-top:26px;font-family:var(--sans);font-size:11px;letter-spacing:.24em;
+    color:rgba(22,26,46,.5);opacity:0;transition:opacity 3s ease;}
+
+  .veil{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:calc(env(safe-area-inset-top) + 30px) 26px calc(env(safe-area-inset-bottom) + 48px);
+    transition:opacity .8s ease;
+    --ink:#1b1f2e; --ink-soft:rgba(27,31,46,.64); --ink-faint:rgba(27,31,46,.36);
+    --line:rgba(40,58,120,.20); --glow:#3a5bd0; --void-0:#ffffff;
+    color:var(--ink);
+    background:radial-gradient(120% 85% at 50% 42%, #ffffff 0%, #f6f8fd 66%, #eef1f8 100%);}
+  .veil.hide{opacity:0;pointer-events:none;}
+  .wordmark{font-size:15px;letter-spacing:.5em;color:var(--glow);text-shadow:0 0 20px rgba(160,195,255,.5);}
+  .wordmark .en{display:block;font-family:var(--sans);font-size:9px;letter-spacing:.42em;
+    color:var(--ink-faint);margin-top:8px;font-weight:300;text-shadow:none;}
+  .step{width:100%;max-width:400px;margin-top:32px;display:none;flex-direction:column;align-items:center;}
+  .step.on{display:flex;}
+  .ask{font-size:14px;letter-spacing:.2em;color:var(--ink-soft);margin-bottom:18px;text-align:center;line-height:1.9;}
+
+  .seg{display:flex;margin-bottom:20px;border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .seg button{font-family:var(--sans);font-size:12px;letter-spacing:.12em;color:var(--ink-soft);
+    background:transparent;border:none;padding:11px 22px;cursor:pointer;transition:.2s;}
+  .seg button.on{background:var(--glow);color:var(--void-0);}
+
+  .picker{display:none;flex-direction:column;align-items:center;width:100%;}
+  .picker.on{display:flex;}
+  .swatches{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 12px;margin-bottom:18px;max-width:320px;}
+  .swatches button{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:none;
+    cursor:pointer;font-family:var(--mincho);font-size:9.5px;color:var(--ink-soft);letter-spacing:.04em;width:44px;}
+  .swatches .dot{width:30px;height:30px;border-radius:50%;border:1px solid rgba(0,0,0,.14);transition:.15s;}
+  .swatches button.on .dot{box-shadow:0 0 0 2px var(--void-0),0 0 0 3px var(--glow),0 0 14px 2px rgba(160,195,255,.5);}
+  .sliders{width:100%;max-width:320px;display:flex;flex-direction:column;gap:15px;margin-bottom:16px;}
+  .sliders label{display:grid;grid-template-columns:70px 1fr;align-items:center;gap:12px;
+    font-family:var(--sans);font-size:11px;letter-spacing:.08em;color:var(--ink-soft);}
+  .sliders input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;outline:none;margin:0;}
+  .sliders input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+    background:#f2f6ff;border:1px solid rgba(0,0,0,.3);box-shadow:0 0 8px rgba(160,195,255,.6);cursor:pointer;}
+  .sliders input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#f2f6ff;
+    border:1px solid rgba(0,0,0,.3);cursor:pointer;}
+  #hex{font-family:var(--mincho);font-size:15px;color:var(--ink);background:transparent;
+    border:none;border-bottom:1px solid var(--line);padding:9px 4px;width:220px;text-align:center;letter-spacing:.04em;}
+  #hex::placeholder{color:var(--ink-faint);font-size:12px;}
+  .preview-row{display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 18px;}
+  .preview{width:48px;height:48px;border-radius:50%;transition:background .3s,box-shadow .3s;}
+  .preview-hex{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink-faint);letter-spacing:.08em;}
+
+  .birth{display:none;flex-direction:column;align-items:center;width:100%;}
+  .birth.on{display:flex;}
+  .bstep{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:10px;}
+  .bstep .lbl{font-size:13px;color:var(--ink-soft);letter-spacing:.1em;width:22px;text-align:center;}
+  .bstep b{font-family:var(--mincho);font-size:30px;min-width:52px;text-align:center;font-weight:400;color:var(--glow);}
+  .bstep button{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:transparent;
+    color:var(--ink);font-size:20px;cursor:pointer;line-height:1;}
+  .bstep button:active{background:var(--glow);color:var(--void-0);}
+
+  #mantra{width:100%;min-height:120px;background:rgba(140,160,230,.05);border:1px solid var(--line);border-radius:14px;
+    color:var(--ink);font-family:var(--mincho);font-size:16px;line-height:2;padding:16px;resize:none;letter-spacing:.04em;}
+  #mantra::placeholder{color:var(--ink-faint);}
+  .hint{font-family:var(--sans);font-size:10.5px;letter-spacing:.14em;color:var(--ink-faint);
+    margin-top:14px;line-height:1.9;text-align:center;}
+
+  .counter{display:flex;align-items:center;gap:26px;margin-bottom:8px;}
+  .counter button{width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:transparent;
+    color:var(--ink);font-size:22px;font-family:var(--mincho);cursor:pointer;line-height:1;transition:.15s;}
+  .counter button:active{background:var(--glow);color:var(--void-0);}
+  .counter .n{font-size:40px;letter-spacing:.04em;min-width:64px;text-align:center;color:var(--glow);}
+  .counter .n small{font-size:14px;color:var(--ink-faint);margin-left:4px;}
+
+  .go{margin-top:36px;font-family:var(--mincho);font-size:15px;letter-spacing:.34em;color:var(--glow);
+    background:transparent;border:1px solid var(--glow);border-radius:999px;padding:15px 44px;cursor:pointer;transition:.2s;
+    box-shadow:0 0 20px rgba(160,195,255,.18);}
+  .go:active{background:var(--glow);color:var(--void-0);}
+  .back{margin-top:18px;font-family:var(--sans);font-size:11px;letter-spacing:.2em;color:var(--ink-faint);
+    background:transparent;border:none;cursor:pointer;padding:8px;}
+  /* ホーム／ひな型チップ／保存 */
+  .prayer-list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+  .prayer{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;
+    background:rgba(140,160,230,.05);cursor:pointer;transition:.15s;}
+  .prayer:active{background:rgba(140,160,230,.14);}
+  .prayer .pd{width:20px;height:20px;border-radius:50%;flex:0 0 auto;}
+  .prayer .pn{flex:1;text-align:left;font-size:15px;letter-spacing:.05em;color:var(--ink);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prayer .px{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:none;background:transparent;
+    color:var(--ink-faint);font-size:17px;cursor:pointer;line-height:1;}
+  .prayer .px:active{color:var(--ink);}
+  .empty-note{font-family:var(--sans);font-size:12px;color:var(--ink-faint);letter-spacing:.1em;margin:18px 0 4px;text-align:center;}
+  .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:9px;margin-top:14px;}
+  .chips button{font-family:var(--mincho);font-size:12.5px;letter-spacing:.08em;color:var(--ink-soft);
+    background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;transition:.15s;}
+  .chips button:active{background:var(--glow);color:var(--void-0);}
+  .save-row{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:340px;margin-top:24px;
+    padding-top:20px;border-top:1px solid var(--line);}
+  .save-toggle{display:flex;align-items:center;gap:11px;font-family:var(--sans);font-size:12.5px;letter-spacing:.08em;
+    color:var(--ink-soft);cursor:pointer;}
+  .save-toggle .box{width:20px;height:20px;border-radius:5px;border:1px solid var(--line);display:flex;align-items:center;
+    justify-content:center;font-size:13px;color:var(--void-0);line-height:1;}
+  .save-toggle.on .box{background:var(--glow);}
+  #save-name{font-family:var(--mincho);font-size:15px;color:var(--ink);background:transparent;border:none;
+    border-bottom:1px solid var(--line);padding:8px 4px;width:240px;text-align:center;letter-spacing:.04em;display:none;}
+  #save-name.on{display:block;}
+  #save-name::placeholder{color:var(--ink-faint);}
+  /* 白背景モード（誘導・のちに設定も） */
+  #induct{position:fixed;inset:0;z-index:7;display:none;}
+  #induct.on{display:block;}
+  #induct-text{position:fixed;left:0;right:0;top:21%;text-align:center;padding:0 34px;
+    font-family:var(--mincho);font-size:20px;letter-spacing:.16em;line-height:2;color:#161a2e;
+    opacity:0;transition:opacity .6s ease;}
+  #induct-text.count{font-size:46px;letter-spacing:.32em;}
+  #induct-text.mei{font-size:23px;letter-spacing:.26em;color:#2a3352;}
+  #induct-text.final{top:52%;transform:translateY(calc(-50% - 3em));}
+  #induct-skip{position:fixed;left:0;right:0;bottom:11%;text-align:center;
+    font-family:var(--sans);font-size:12px;letter-spacing:.26em;color:rgba(22,26,46,.42);cursor:pointer;}
+  .induct-seg{margin-top:18px;}
+  #nightfall{position:fixed;inset:0;z-index:0;opacity:0;pointer-events:none;
+    background:
+      radial-gradient(120% 85% at 50% 56%, #04050c 0%, #070b1e 55%, #0b1236 100%),
+      linear-gradient(180deg,#080b1a,#05060d);}
+  #gate{position:fixed;inset:0;z-index:8;display:none;}
+  #gate.on{display:block;}
+  #gate-quote{position:fixed;left:0;right:0;top:21%;padding:0 34px;text-align:center;
+    font-family:var(--mincho);font-size:19px;line-height:2.1;letter-spacing:.09em;color:#eef3ff;
+    opacity:0;transition:opacity 1.6s ease;text-shadow:0 0 22px rgba(150,185,255,.28);}
+  #gate-src{position:fixed;left:0;right:0;top:69%;text-align:center;font-family:var(--sans);
+    font-size:11px;letter-spacing:.2em;color:rgba(210,222,255,.42);opacity:0;transition:opacity 1.6s ease;}
+  #gate-go{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 12%);text-align:center;
+    font-family:var(--mincho);font-size:14px;letter-spacing:.36em;color:#cfe0ff;opacity:0;
+    transition:opacity 1.6s ease;cursor:pointer;}
+</style>
+</head>
+<body>
+<div id="nightfall"></div>
+<canvas id="gl"></canvas>
+<canvas id="fx"></canvas>
+<div id="gate"><div id="gate-quote"></div><div id="gate-src"></div><div id="gate-go">祈りへ</div></div>
+<div id="whisper"></div>
+<div id="flash"></div>
+<div id="induct">
+  <div id="induct-text"></div>
+  <div id="induct-skip">スキップ</div>
+</div>
+<div id="ending"><div id="ending-main"></div><div id="ending-sub"></div></div>
+
+<div class="veil" id="veil">
+  <div class="wordmark">Lureal<span class="en">ルリアル</span></div>
+
+  <div class="step" id="step-home">
+    <div class="ask">灯した祈り。</div>
+    <div class="prayer-list" id="prayer-list"></div>
+    <button class="go" id="new-prayer">＋ 新しい祈り</button>
+  </div>
+
+  <div class="step" id="step-color">
+    <div class="ask">あなたに、応える色。</div>
+    <div class="seg">
+      <button data-mode="pick" class="on">選ぶ</button>
+      <button data-mode="birth">誕生日で</button>
+    </div>
+
+    <div class="preview-row">
+      <div class="preview" id="cprev"></div>
+      <div class="preview-hex" id="cprev-hex">#E6863A</div>
+    </div>
+
+    <div class="picker on" id="picker-wrap">
+      <div class="swatches" id="swatches"></div>
+      <div class="sliders">
+        <label>色あい<input type="range" id="sH" min="0" max="360" value="30"></label>
+        <label>あざやかさ<input type="range" id="sS" min="20" max="100" value="80"></label>
+        <label>あかるさ<input type="range" id="sL" min="25" max="75" value="55"></label>
+      </div>
+      <input type="text" id="hex" spellcheck="false" placeholder="#コード や gold・indigo も（任意）">
+    </div>
+
+    <div class="birth" id="birth-wrap">
+      <div class="bstep"><span class="lbl">月</span>
+        <button data-b="m" data-d="-1">−</button><b id="bMonth">1</b><button data-b="m" data-d="1">＋</button></div>
+      <div class="bstep"><span class="lbl">日</span>
+        <button data-b="d" data-d="-1">−</button><b id="bDay">1</b><button data-b="d" data-d="1">＋</button></div>
+      <div class="hint">生まれた月日から、ひとつの色を導きます</div>
+    </div>
+
+    <button class="go" id="color-next">この色に</button>
+  </div>
+
+  <div class="step" id="step-word">
+    <div class="ask">炎に、食べさせる言葉。</div>
+    <textarea id="mantra" placeholder="マントラ、祈り、自分で決めた一言。&#10;空のままでも、息だけを灯せます。"></textarea>
+    <div class="chips" id="word-chips"></div>
+    <div class="hint">ひと息で、この言葉をひとめぐり吸い込みます。ひな型はタップで入る（もう一度で次の候補）</div>
+    <button class="go" id="word-next">つぎへ</button>
+    <button class="back" id="word-back">← 色へ戻る</button>
+  </div>
+
+  <div class="step" id="step-closing">
+    <div class="ask">結びの、ひとこと。</div>
+    <textarea id="closing" placeholder="満ちたときに現れる言葉。&#10;空なら「祈りは、光になった」。"></textarea>
+    <div class="chips" id="closing-chips"></div>
+    <div class="hint">祈りが満ちた瞬間、白の中へ現れます</div>
+    <button class="go" id="closing-next">つぎへ</button>
+    <button class="back" id="closing-back">← 言葉へ戻る</button>
+  </div>
+
+  <div class="step" id="step-count">
+    <div class="ask">いくつの息を、捧げる。</div>
+    <div class="counter">
+      <button id="minus">−</button>
+      <div class="n"><span id="count-n">3</span><small>息</small></div>
+      <button id="plus">＋</button>
+    </div>
+    <div class="hint">数は表に出ません。球の育ちが、あなたの数です</div>
+
+    <div class="seg induct-seg" id="tempo-seg">
+      <button data-t="0">ゆっくり</button>
+      <button data-t="1" class="on">ふつう</button>
+      <button data-t="2">はやい</button>
+    </div>
+    <div class="hint">誘導の速さ</div>
+
+    <div class="save-row">
+      <div class="save-toggle" id="save-toggle"><span class="box" id="save-box"></span>この祈りを覚えておく</div>
+      <input type="text" id="save-name" spellcheck="false" placeholder="祈りの名前">
+    </div>
+
+    <button class="go" id="begin">灯す</button>
+    <button class="back" id="count-back">← 結びへ戻る</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ともしび / EMBER  ── 闇に灯す、その場限りの光
+   色は燃料、言葉は糧、粒は幸運（青白＋金）。記録しない。
+   ============================================================ */
+const DPR=Math.min(window.devicePixelRatio||1,2);
+const glc=document.getElementById("gl"), fxc=document.getElementById("fx");
+const fx=fxc.getContext("2d");
+const flashEl=document.getElementById("flash");
+const nightfallEl=document.getElementById("nightfall");
+const gateEl=document.getElementById("gate");
+let W=0,H=0;
+function resize(){
+  W=innerWidth;H=innerHeight;
+  [glc,fxc].forEach(c=>{c.width=W*DPR;c.height=H*DPR;c.style.width=W+"px";c.style.height=H+"px";});
+  fx.setTransform(DPR,0,0,DPR,0,0);
+  if(gl){gl.viewport(0,0,glc.width,glc.height);}
+}
+
+const cfg={ rgb:[0.90,0.525,0.227], target:3, phrases:[], css:"#E6863A", closing:"", system:null };
+
+/* ---------- WebGL 炎（乱流ノイズ・発光） ---------- */
+let gl=null, prog=null, U={};
+const VS=`attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
+const FS=`
+precision highp float;
+uniform vec2 uRes; uniform float uTime, uScale, uAlpha, uHeat, uBaseY; uniform vec3 uColor;
+float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
+float noise(vec2 p){vec2 i=floor(p),f=fract(p);
+  float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));
+  vec2 u=f*f*(3.-2.*f);return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+void main(){
+  vec2 uv=gl_FragCoord.xy/uRes; float aspect=uRes.x/uRes.y;
+  vec2 p=uv-vec2(0.5,uBaseY); p.x*=aspect;
+  float R=0.11*uScale;
+  float d=length(p)/max(R,0.001);
+  float breath=0.94+0.06*sin(uTime*0.7);              // 呼吸のような微かな明滅
+  float shim=0.9+0.1*noise(p*7.0+uTime*0.15);         // 内側のかすかな揺らぎ
+  float body=smoothstep(1.05,0.10,d);                 // 芯は不透明、縁で減衰
+  float halo=exp(-d*d*1.5)*0.42;                       // 柔らかな暈
+  float inten=(body+halo)*breath*shim;
+  float whiteness=clamp(smoothstep(0.55,0.0,d)+(uHeat-0.7)*1.15,0.0,1.0); // 中心白熱、熱で外へ
+  vec3 base=uColor, col=mix(base,vec3(1.0),whiteness);
+  float alpha=clamp(inten,0.0,1.0)*uAlpha;
+  gl_FragColor=vec4(col,alpha);
+}`;
+function sh(type,src){const s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.warn(gl.getShaderInfoLog(s));return s;}
+function initGL(){
+  gl=glc.getContext("webgl",{alpha:true,premultipliedAlpha:false,antialias:true});
+  if(!gl) return false;
+  prog=gl.createProgram();
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog); gl.useProgram(prog);
+  const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(prog,"a"); gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  ["uRes","uTime","uScale","uAlpha","uHeat","uBaseY","uColor"].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
+  gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+  gl.clearColor(0,0,0,0);
+  return true;
+}
+const hasGL=initGL();
+
+/* ---------- 状態 ---------- */
+const BASE_Y=0.44, REST=0.9, GROW=0.13, INHALE_SEC=4.2, BLOOM_BIG=2.1, BLOOM_EXPAND=5.0;
+const flame={count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1};
+let mode="setup", holding=false, settleT=0, restNeeded=false;
+
+/* ===== 催眠誘導（凝視・白背景・光と繋がる。フレーム駆動でジワッと） ===== */
+const inductEl=document.getElementById("induct");
+const inductTextEl=document.getElementById("induct-text");
+const inductSkipEl=document.getElementById("induct-skip");
+let inductTempo=1;
+const TEMPO=[{breath:8.0},{breath:6.0},{breath:4.5}];   // 呼吸周期のみ（速さは滞在で調整）
+const FADE=3.0;                                          // 出る/消える＝3秒
+const HOLD=[2.6,1.8,1.0];                                // とどまる：ゆっくり/ふつう/はやい
+let inductActive=false, iIdx=0, iPhase="in", iT=0, inductDepth=0, inductBreath=6.0, inductPulse=0, inductPulseV=0;
+let diving=false, diveT=0, divePhase="";
+const BASE_LINES=[
+  {t:"さあ楽にして、光を見つめて"},
+  {t:"呼吸を整えよう"},
+  {t:"息を吸って……"},
+  {t:"ゆっくり息を吐いて……"},
+  {t:"光がふくらむ。"},
+  {t:"光がゆるむ。"},
+  {t:"肩の力が抜けていく"},
+  {t:"うでも、あしも、軽くなる"},
+  {t:"見つめるほど、光を感じる"},
+  {t:"光があなたをつつみ"},
+  {t:"ひとつになる。"},
+  {t:"あなたと光が近づいていく"},
+  {t:"光と、つながっていく"},
+  {t:"光に、つつまれていく"},
+  {t:"もっと、深く。"},
+  {t:"光とつながる"},
+  {t:"3つ数える"},
+  {t:"光とあなたがひとつになる"},
+  {t:"3",count:1},
+  {t:"2",count:1},
+  {t:"1",count:1}
+];
+let LINES=BASE_LINES;
+function buildInductLines(){
+  const sys=SYSTEMS.find(s=>s.key===cfg.system);
+  const L=[];
+  if(sys) L.push({t:sys.mei, mei:1});                                  // 銘＝入口の一言
+  BASE_LINES.forEach((ln,i)=>{ L.push(ln);
+    if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t})); });// 深化に系統の一文
+  return L;
+}
+function lineTiming(L){ return {fin:FADE,hold:HOLD[inductTempo],fout:FADE}; }
+function setupLine(i){
+  iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
+  inductDepth=Math.min(1.0, i/(LINES.length-3));
+  if(L.count) inductPulseV+=3.0;
+  inductTextEl.classList.toggle("count", !!L.count); inductTextEl.classList.remove("final");
+  inductTextEl.classList.toggle("mei", !!L.mei);
+  inductTextEl.innerHTML=esc(L.t); inductTextEl.style.opacity=0;
+}
+function nextLine(){ if(iIdx+1>=LINES.length){ diveStart(); return; } setupLine(iIdx+1); }
+function updateInduction(dt){
+  const tm=lineTiming(LINES[iIdx]); iT+=dt;
+  if(iPhase==="in"){ inductTextEl.style.opacity=Math.min(1,iT/tm.fin);
+    if(iT>=tm.fin){iPhase="hold";iT=0;inductTextEl.style.opacity=1;} }
+  else if(iPhase==="hold"){ inductTextEl.style.opacity=1; if(iT>=tm.hold){iPhase="out";iT=0;} }
+  else { inductTextEl.style.opacity=Math.max(0,1-iT/tm.fout); if(iT>=tm.fout) nextLine(); }
+}
+function startInduction(){
+  inductActive=true; inductDepth=0; diving=false; inductPulse=0; inductPulseV=0;
+  inductBreath=TEMPO[inductTempo].breath;
+  LINES=buildInductLines();                          // 系統で味付け（銘＋深化の一文）
+  document.getElementById("veil").classList.add("hide");
+  document.body.classList.remove("dark");
+  inductEl.classList.add("on");
+  inductTextEl.style.transition="none";
+  inductSkipEl.style.opacity="1";
+  setupLine(0); mode="induct";
+}
+function inductAdvance(){
+  if(!inductActive||diving)return;
+  if(iPhase==="in" && iT<lineTiming(LINES[iIdx]).fin){ iPhase="hold"; iT=0; inductTextEl.style.opacity=1; } // 出現を一気に完了
+  else nextLine();                                                                                          // 次の文へ
+}
+function inductSkip(){ if(!inductActive||diving)return; diveStart(); }
+function diveStart(){ if(diving)return; diving=true; diveT=0; divePhase="flood";
+  inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0"; buzz([30,50,200]); }
+inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return; inductAdvance(); });
+inductSkipEl.addEventListener("pointerdown",e=>{ e.stopPropagation(); inductSkip(); });
+function drawInductOrb(t){
+  const cx=W/2, cy=H*(1-BASE_Y);
+  const bp=Math.sin(t*2*Math.PI/inductBreath);
+  const baseScale=1+inductDepth*1.5+inductPulse;
+  const R=Math.min(W,H)*0.095*(1+0.16*bp)*baseScale;
+  fx.save();
+  let g=fx.createRadialGradient(cx,cy,0,cx,cy,R*1.9);
+  g.addColorStop(0,cfg.css); g.addColorStop(0.5,cfg.css+"44"); g.addColorStop(1,cfg.css+"00");
+  fx.globalAlpha=0.55; fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R*1.9,0,6.283);fx.fill();
+  fx.globalAlpha=1;
+  g=fx.createRadialGradient(cx,cy,0,cx,cy,R);
+  g.addColorStop(0,"rgba(255,255,255,0.97)"); g.addColorStop(0.42,cfg.css); g.addColorStop(1,cfg.css+"00");
+  fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R,0,6.283);fx.fill();
+  fx.restore();
+}
+
+function buzz(m){try{if(navigator.vibrate)navigator.vibrate(m);}catch(e){}}
+const whisper=document.getElementById("whisper");let wcur="";
+function say(t){if(t===wcur)return;wcur=t;whisper.classList.remove("on");
+  setTimeout(()=>{whisper.textContent=t;if(t)whisper.classList.add("on");},300);}
+function easeOut(x){return 1-Math.pow(1-x,3);}
+function easeIn(x){return x*x;}
+
+/* ---------- 粒子（青白＋金のボケ） ---------- */
+function makeSprite(inner,mid){
+  const s=64,c=document.createElement("canvas");c.width=c.height=s;
+  const x=c.getContext("2d"),g=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
+  g.addColorStop(0,inner);g.addColorStop(0.4,mid);g.addColorStop(1,"rgba(0,0,0,0)");
+  x.fillStyle=g;x.fillRect(0,0,s,s);return c;
+}
+const sprBlue=makeSprite("rgba(232,242,255,1)","rgba(150,190,255,0.45)");
+const sprGold=makeSprite("rgba(255,244,210,1)","rgba(242,201,76,0.5)");
+let particles=[];
+function initParticles(){
+  particles=[];
+  for(let i=0;i<70;i++){
+    const gold=Math.random()<0.22;
+    particles.push({x:Math.random()*W,y:Math.random()*H,z:0.3+Math.random()*1.4,
+      vx:(Math.random()-0.5)*0.15,vy:-(0.05+Math.random()*0.25),
+      gold,ph:Math.random()*6.283,tw:0.4+Math.random()*0.9,a:0.22+Math.random()*0.5,decay:0});
+  }
+}
+function goldRise(cx,cy){
+  for(let i=0;i<30;i++){particles.push({x:cx+(Math.random()-0.5)*W*0.14,y:cy+(Math.random()-0.2)*70,
+    z:0.4+Math.random()*1.0,vx:(Math.random()-0.5)*0.5,vy:-(0.35+Math.random()*1.1),
+    gold:Math.random()<0.85,ph:Math.random()*6.283,tw:1+Math.random(),a:0.8,decay:0.3});}
+}
+function drawParticles(dt,t){
+  fx.globalCompositeOperation="lighter";
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx*p.z;p.y+=p.vy*p.z;
+    if(p.decay){p.vx*=0.97;p.vy=p.vy*0.97+0.02;p.a-=dt*p.decay;if(p.a<=0){particles.splice(i,1);continue;}}
+    else{ if(p.y<-40){p.y=H+40;p.x=Math.random()*W;} if(p.x<-40)p.x=W+40; if(p.x>W+40)p.x=-40; }
+    const tw=0.55+0.45*Math.sin(t*p.tw+p.ph), size=7*p.z;
+    fx.globalAlpha=Math.max(0,p.a)*tw;
+    fx.drawImage(p.gold?sprGold:sprBlue,p.x-size,p.y-size,size*2,size*2);
+  }
+  fx.globalCompositeOperation="source-over";fx.globalAlpha=1;
+}
+
+/* ---------- 天から降りて球に吸われる言葉 ---------- */
+function drawWords(){
+  if(!cfg.phrases.length)return;
+  if(mode==="bloom"||mode==="done")return;
+  const lines=cfg.phrases,N=lines.length,cx=W/2;
+  const topY=Math.max(H*0.14, 60), gap=Math.min(W,H)*0.075, orbY=H*(1-BASE_Y);
+  const p=(mode==="inhaling")?flame.intake:0, seg=1/N;
+  fx.textAlign="center";fx.textBaseline="middle";
+  for(let k=0;k<N;k++){
+    const restY=topY+k*gap;
+    const start=(N-1-k)*seg;                       // 球に近い行（下）から先に吸われる
+    const lp=Math.min(1,Math.max(0,(p-start)/seg));
+    const y=restY+(orbY-restY)*easeIn(lp);         // 天 → 球中心へ降下
+    const a=(mode==="inhaling")?0.92*(1-lp*0.92):0.42;
+    if(a<=0.02)continue;
+    fx.globalAlpha=a;fx.fillStyle="rgba(224,236,255,1)";
+    fx.shadowColor="rgba(150,190,255,.75)";fx.shadowBlur=13;
+    const fs=Math.min(W,H)*0.044*(1-lp*0.28);
+    fx.font=fs+'px "Hiragino Mincho ProN","Yu Mincho",serif';
+    fx.fillText(lines[k],cx,y);
+  }
+  fx.shadowBlur=0;fx.globalAlpha=1;
+}
+
+/* ---------- 開花：球が膨らんで白く満ちる（放射なし） ---------- */
+/* 球体そのものが uScale と uHeat の上昇で膨張・白熱する。個別描画は不要。 */
+
+/* ---------- 2D フォールバック球（WebGL無い時・発光） ---------- */
+function drawFallback(t,scale,cx,cy){
+  const R=Math.min(W,H)*0.11*scale*(0.96+Math.sin(t*0.7)*0.04);
+  const white=Math.min(1,(flame.bloom>0?0.4+flame.bloom:0.35));
+  fx.save();fx.globalCompositeOperation="lighter";fx.globalAlpha=flame.alpha;
+  const grd=fx.createRadialGradient(cx,cy,0,cx,cy,R*1.6);
+  grd.addColorStop(0,"rgba(255,255,255,0.95)");
+  grd.addColorStop(0.35,cfg.css);
+  grd.addColorStop(1,"rgba(0,0,0,0)");
+  fx.fillStyle=grd;fx.beginPath();fx.arc(cx,cy,R*1.6,0,6.283);fx.fill();
+  fx.restore();fx.globalCompositeOperation="source-over";fx.globalAlpha=1;
+}
+
+/* ============================================================ */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
+  fx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H*(1-BASE_Y);
+
+  /* ダイブ：白に満ちる → 「ひとつになっている」→ 文字が消える → 光が中央へ集まり闇の一点に収まる */
+  if(diving){
+    diveT+=dt;
+    if(divePhase==="flood"){
+      flashEl.style.opacity=Math.min(1,diveT/1.3);
+      inductDepth=Math.min(3.2, inductDepth+dt*2.2);          // 光が全体へ広がる
+      if(diveT>=1.3){ divePhase="whiteHold"; diveT=0; flashEl.style.opacity=1;
+        inductTextEl.classList.remove("count"); inductTextEl.classList.add("final");
+        inductTextEl.textContent="ひとつになっている"; inductTextEl.style.opacity=0; }
+    }else if(divePhase==="whiteHold"){
+      flashEl.style.opacity=1;
+      if(diveT>=1.5){ divePhase="finalIn"; diveT=0; }         // 無音の間
+    }else if(divePhase==="finalIn"){
+      inductTextEl.style.opacity=Math.min(1,diveT/3.0);       // 白地にジワッと
+      if(diveT>=3.0){ divePhase="finalHold"; diveT=0; }
+    }else if(divePhase==="finalHold"){
+      if(diveT>=2.4){ divePhase="finalOut"; diveT=0; }
+    }else if(divePhase==="finalOut"){
+      inductTextEl.style.opacity=Math.max(0,1-diveT/1.5);     // 文字が消える
+      if(diveT>=1.5){ divePhase="converge"; diveT=0; inductEl.classList.remove("on"); }
+    }else if(divePhase==="converge"){ /* 白のまま、光が中央の一点へ集まる */
+      flashEl.style.opacity=Math.max(0,1-diveT/0.6);          // 白い覆いは引く（地は白のまま）
+      inductDepth=3.2*(1-easeOut(Math.min(1,diveT/2.0)));     // 収束（2秒）
+      if(diveT>=2.0){ divePhase="nightfall"; diveT=0; inductDepth=0; }
+    }else{ /* nightfall：収束のあと、3秒かけて白→闇へジワリ（光は灯ったまま） */
+      nightfallEl.style.opacity=Math.min(1,diveT/3.0);
+      if(diveT>=3.0){ document.body.classList.add("dark"); nightfallEl.style.opacity=0;
+        diving=false; inductActive=false; beginPractice(); }
+    }
+  }
+
+  /* 入り口：闇に青白の光と一句 */
+  if(mode==="gate"){
+    if(hasGL) gl.clear(gl.COLOR_BUFFER_BIT);
+    drawGateOrb(t);
+    requestAnimationFrame(frame); return;
+  }
+
+  /* 誘導中：白地に選んだ色の光（呼吸で膨張収縮・徐々に深化） */
+  if(mode==="induct"){
+    if(hasGL) gl.clear(gl.COLOR_BUFFER_BIT);
+    inductPulseV+=(-40*inductPulse-9*inductPulseV)*dt; inductPulse+=inductPulseV*dt;
+    if(!diving) updateInduction(dt);
+    drawInductOrb(t);
+    requestAnimationFrame(frame); return;
+  }
+
+  if(mode!=="setup"){
+    if(mode==="inhaling"){
+      if(holding){
+        const ease=0.6+0.8*Math.sin(flame.intake*Math.PI);
+        flame.intake+=dt/INHALE_SEC*ease;
+        if(flame.intake>=1){
+          flame.intake=0;flame.count++;flame.pv+=3.4;buzz(18);
+          if(flame.count>=cfg.target)startBloom();
+          else{mode="settle";settleT=0;restNeeded=true;say("もう、ひと息");}
+        }
+      }else{flame.intake-=dt*1.4;if(flame.intake<=0){flame.intake=0;mode="idle";}}
+    }
+    if(mode==="settle"){settleT+=dt;if(settleT>1.3&&!holding)mode="idle";}
+    if(mode==="bloom"){flame.bloom+=dt/2.6;if(flame.bloom>=1){flame.bloom=1;mode="done";}
+      if(flame.bloom>0.62)flame.alpha=1-(flame.bloom-0.62)/0.38;}
+    if(mode==="done")flame.alpha+=(0-flame.alpha)*dt*0.8;
+    flame.pv+=(-42*flame.pulse-9*flame.pv)*dt; flame.pulse+=flame.pv*dt;
+
+    const gstep=BLOOM_BIG/Math.max(1,cfg.target);
+    const bloomScale=1+easeOut(flame.bloom)*BLOOM_EXPAND;
+    const scale=REST*(1+gstep*(flame.count+flame.intake))*(1+flame.pulse)*bloomScale;
+    const heat=Math.min(2.0,0.7+0.5*flame.intake+flame.bloom*1.3);
+    if(!diving) flashEl.style.opacity=Math.min(1,Math.max(0,(flame.bloom-0.4)/0.55));
+
+    if(hasGL){
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform2f(U.uRes,glc.width,glc.height);
+      gl.uniform1f(U.uTime,t); gl.uniform1f(U.uScale,scale);
+      gl.uniform1f(U.uAlpha,flame.alpha); gl.uniform1f(U.uHeat,heat);
+      gl.uniform1f(U.uBaseY,BASE_Y); gl.uniform3f(U.uColor,cfg.rgb[0],cfg.rgb[1],cfg.rgb[2]);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+    }else drawFallback(t,scale,cx,cy);
+
+    drawParticles(dt,t);
+    drawWords();
+  } else {
+    drawParticles(dt,t);   // 設定中も闇に粒が舞う
+  }
+  requestAnimationFrame(frame);
+}
+
+function startBloom(){mode="bloom";flame.bloom=0;buzz([40,60,240]);say("");
+  goldRise(W/2,H*(1-BASE_Y));
+  const msg=(cfg.closing&&cfg.closing.trim())?cfg.closing.trim():"祈りは、光になった";
+  const e=document.getElementById("ending");
+  const mn=document.getElementById("ending-main"), sb=document.getElementById("ending-sub");
+  mn.innerHTML=esc(msg); sb.textContent="さあ、ゆこう";
+  mn.style.opacity=0; sb.style.opacity=0;
+  setTimeout(()=>{ e.classList.add("on"); mn.style.opacity=1; }, 2400);   // 結びが3秒かけてじんわり
+  setTimeout(()=>{ sb.style.opacity=1; }, 2400+3000+2000);                // 3秒フェード＋2秒とどまる後、サブが3秒かけて
+}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");}
+function balanceBreak(s){                     // 明示改行は尊重。長い一句は中央付近の区切りで2行に
+  if(!s||s.indexOf("\n")>=0||s.length<=16) return s;
+  const mid=s.length/2; let best=-1,bd=1e9;
+  for(let i=0;i<s.length-1;i++){ if(s[i]==="、"||s[i]==="。"){ const d=Math.abs(i-mid); if(d<bd){bd=d;best=i;} } }
+  return best<0 ? s : s.slice(0,best+1)+"\n"+s.slice(best+1);
+}
+
+/* ---------- 入力 ---------- */
+function pStart(){if(mode==="done")return;
+  if(mode==="idle"){mode="inhaling";say("");}
+  if(mode==="settle"&&!restNeeded){mode="inhaling";say("");}
+  holding=true;}
+function pEnd(){holding=false;if(mode==="settle")restNeeded=false;}
+fxc.addEventListener("pointerdown",e=>{e.preventDefault();pStart();});
+fxc.addEventListener("pointerup",e=>{e.preventDefault();pEnd();});
+fxc.addEventListener("pointercancel",pEnd);
+document.getElementById("ending").addEventListener("pointerdown",()=>{
+  if(mode!=="done")return;
+  mode="return";                                            // 本編描画を止め、白を保つ
+  document.getElementById("ending").classList.remove("on");
+  document.getElementById("ending-main").style.opacity=0;  // 文字が3秒で消え、真っ白に
+  document.getElementById("ending-sub").style.opacity=0;
+  flashEl.style.opacity=1;                                  // 真っ白を保持
+  setTimeout(()=>{                                          // 3秒（真っ白へ）＋ 8秒（白のまま）＝11秒後
+    Object.assign(flame,{count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1}); initParticles();
+    gateGone=false; initGate();                             // 白の下に、闇のトップ（新しい一句）を用意
+    flashEl.style.transition="opacity 3s ease";
+    requestAnimationFrame(()=>{ flashEl.style.opacity=0; });// 3秒かけて白→闇のトップへ
+    setTimeout(()=>{ flashEl.style.transition=""; }, 3200);
+  }, 11000);
+});
+
+/* ============================================================
+   設定
+   ============================================================ */
+function showStep(n){["home","color","word","closing","count"].forEach(s=>
+  document.getElementById("step-"+s).classList.toggle("on",s===n));
+  const vl=document.getElementById("veil"); if(vl) vl.scrollTop=0;}
+
+document.querySelectorAll(".seg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".seg button").forEach(x=>x.classList.toggle("on",x===b));
+  const m=b.dataset.mode;
+  document.getElementById("picker-wrap").classList.toggle("on",m==="pick");
+  document.getElementById("birth-wrap").classList.toggle("on",m==="birth");
+}));
+
+const JP={"朱":"#EB6101","紅":"#C9171E","茜":"#B7282E","緋":"#D3381C","金":"#E6B422","山吹":"#F8B500",
+  "橙":"#EE7800","琥珀":"#CA6924","翠":"#00A381","翡翠":"#38B48B","若草":"#AACF53","緑":"#3EB370",
+  "藍":"#165E83","群青":"#4A488E","瑠璃":"#1E50A2","鉄紺":"#17184B","青":"#0068B7","浅葱":"#00A3AF",
+  "菫":"#7058A3","藤":"#8B81C3","紫":"#884898","牡丹":"#A22041","桜":"#FDEFF2","白":"#F7F7F7","金色":"#E6B422"};
+function hexToRgb(h){h=h.replace("#","");if(h.length===3)h=h.split("").map(c=>c+c).join("");
+  const n=parseInt(h,16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255];}
+function resolveColor(str){
+  str=(str||"").trim();
+  if(/^#?[0-9a-fA-F]{6}$/.test(str)) return (str[0]==="#"?str:"#"+str).toUpperCase();
+  if(/^#?[0-9a-fA-F]{3}$/.test(str)){const h=str.replace("#","");return("#"+h.split("").map(c=>c+c).join("")).toUpperCase();}
+  if(JP[str]) return JP[str];
+  const el=document.createElement("div"); el.style.color=""; el.style.color=str;
+  if(el.style.color==="") return null;
+  document.body.appendChild(el);const c=getComputedStyle(el).color;document.body.removeChild(el);
+  const m=c.match(/(\d+),\s*(\d+),\s*(\d+)/); if(!m) return null;
+  const to=x=>(+x).toString(16).padStart(2,"0");
+  return ("#"+to(m[1])+to(m[2])+to(m[3])).toUpperCase();
+}
+function setColor(hex,keepText){
+  hex=hex.toUpperCase(); cfg.css=hex; cfg.rgb=hexToRgb(hex);
+  if(!keepText){ const hf=document.getElementById("hex"); if(hf) hf.value=hex; }
+  const prev=document.getElementById("cprev");
+  prev.style.background=hex; prev.style.boxShadow="0 0 28px 7px "+hex+"88";
+  document.getElementById("cprev-hex").textContent=hex;
+}
+function hexToHsl(hex){const rgb=hexToRgb(hex),r=rgb[0],g=rgb[1],b=rgb[2];
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0,l=(mx+mn)/2;
+  if(mx!==mn){const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);
+    if(mx===r)h=(g-b)/d+(g<b?6:0);else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h/=6;}
+  return[Math.round(h*360),Math.round(s*100),Math.round(l*100)];}
+function hslToHex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,
+  a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
+  const to=x=>Math.round(x*255).toString(16).padStart(2,"0");
+  return("#"+to(f(0))+to(f(8))+to(f(4))).toUpperCase();}
+
+const sH=document.getElementById("sH"),sS=document.getElementById("sS"),sL=document.getElementById("sL");
+function paintTracks(){const h=+sH.value;
+  sH.style.background="linear-gradient(90deg,hsl(0,80%,55%),hsl(60,80%,55%),hsl(120,80%,55%),hsl(180,80%,55%),hsl(240,80%,55%),hsl(300,80%,55%),hsl(360,80%,55%))";
+  sS.style.background="linear-gradient(90deg,hsl("+h+",8%,55%),hsl("+h+",95%,52%))";
+  sL.style.background="linear-gradient(90deg,#0a0c18,hsl("+h+",80%,55%),#eef3ff)";}
+function fromSliders(){setColor(hslToHex(+sH.value,+sS.value,+sL.value));markSwatch(null);paintTracks();}
+[sH,sS,sL].forEach(s=>s.addEventListener("input",fromSliders));
+function syncSliders(hex){const hsl=hexToHsl(hex);
+  sH.value=hsl[0];sS.value=Math.max(20,Math.min(100,hsl[1]));sL.value=Math.max(25,Math.min(75,hsl[2]));paintTracks();}
+
+const SW=[["朱","#E34234"],["紅","#C9171E"],["茜","#B7282E"],["金","#E6B422"],
+  ["山吹","#F8B500"],["琥珀","#E6863A"],["翡翠","#38B48B"],["若草","#AACF53"],
+  ["浅葱","#00A3AF"],["藍","#2A5CAA"],["瑠璃","#1E50A2"],["鉄紺","#17184B"],
+  ["菫","#7A5CD6"],["牡丹","#C4477E"],["桜","#F4B9C6"],["白炎","#CFE0FF"]];
+const swWrap=document.getElementById("swatches");
+function markSwatch(active){for(const c of swWrap.children)c.classList.toggle("on",c===active);}
+SW.forEach(pair=>{const n=pair[0],hex=pair[1];const b=document.createElement("button");
+  b.innerHTML='<span class="dot" style="background:'+hex+'"></span>'+n;
+  b.addEventListener("click",()=>{setColor(hex);syncSliders(hex);markSwatch(b);});
+  swWrap.appendChild(b);});
+
+const hexIn=document.getElementById("hex");
+if(hexIn) hexIn.addEventListener("input",e=>{const hex=resolveColor(e.target.value);
+  if(hex){setColor(hex,true);syncSliders(hex);markSwatch(null);}});
+
+let bM=1,bD=1;
+function birthColor(){const key=bM*31+bD,hue=Math.round((key*137.508)%360);
+  setColor(hslToHex(hue,82,55));syncSliders(cfg.css);markSwatch(null);}
+document.querySelectorAll(".bstep button").forEach(btn=>btn.addEventListener("click",()=>{
+  const d=+btn.dataset.d;
+  if(btn.dataset.b==="m"){bM=((bM-1+d+12)%12)+1;document.getElementById("bMonth").textContent=bM;}
+  else{bD=((bD-1+d+31)%31)+1;document.getElementById("bDay").textContent=bD;}
+  birthColor();}));
+
+document.getElementById("color-next").addEventListener("click",()=>showStep("word"));
+document.getElementById("word-back").addEventListener("click",()=>showStep("color"));
+document.getElementById("word-next").addEventListener("click",()=>showStep("closing"));
+document.getElementById("closing-back").addEventListener("click",()=>showStep("word"));
+document.getElementById("closing-next").addEventListener("click",()=>{ prefillName(); showStep("count"); });
+document.getElementById("count-back").addEventListener("click",()=>showStep("closing"));
+
+/* ---------- 保存（レシピのみ／記録はしない）。実アプリでは永続、プレビューでは揮発 ---------- */
+const SKEY="ember_prayers_v1";
+let store=[];
+function loadStore(){ try{const s=localStorage.getItem(SKEY);store=s?JSON.parse(s):[];}catch(e){store=[];}
+  if(!Array.isArray(store))store=[]; }
+function persist(){ try{localStorage.setItem(SKEY,JSON.stringify(store));}catch(e){} }
+function firstLine(t){ if(!t)return""; const l=t.split(/\n/).map(s=>s.trim()).filter(Boolean);
+  const s=l[0]||""; return s.length>18?s.slice(0,18):s; }
+function splitPhrases(raw){ return raw?raw.split(/[、。\n\r,.!?！？　]+/).map(s=>s.trim()).filter(Boolean):[]; }
+
+/* ---------- ホーム（保存した祈り一覧） ---------- */
+function renderHome(){
+  const list=document.getElementById("prayer-list"); list.innerHTML="";
+  if(!store.length){ const d=document.createElement("div"); d.className="empty-note";
+    d.textContent="まだ祈りはありません"; list.appendChild(d); return; }
+  store.forEach((p,i)=>{
+    const row=document.createElement("div"); row.className="prayer";
+    const dot=document.createElement("span"); dot.className="pd";
+    dot.style.background=p.hex; dot.style.boxShadow="0 0 12px 2px "+p.hex+"aa";
+    const nm=document.createElement("span"); nm.className="pn"; nm.textContent=p.name||"無題";
+    const del=document.createElement("button"); del.className="px"; del.textContent="×";
+    row.appendChild(dot); row.appendChild(nm); row.appendChild(del);
+    row.addEventListener("click",()=>lightPrayer(p));
+    del.addEventListener("click",e=>{e.stopPropagation();store.splice(i,1);persist();renderHome();
+      if(!store.length)showStep("color");});
+    list.appendChild(row);
+  });
+}
+function lightPrayer(p){
+  setColor(p.hex); syncSliders(cfg.css); markSwatch(null);
+  cfg.words=p.words||""; cfg.phrases=splitPhrases(cfg.words);
+  cfg.closing=p.closing||""; cfg.target=p.count||3; cfg.system=p.system||null;
+  startInduction();
+}
+document.getElementById("new-prayer").addEventListener("click",()=>{
+  document.getElementById("mantra").value=""; document.getElementById("closing").value="";
+  cfg.system=null;
+  saveOn=false; saveToggle.classList.remove("on"); document.getElementById("save-box").textContent="";
+  saveNameEl.classList.remove("on"); saveNameEl.value="";
+  showStep("color");
+});
+
+/* ---------- 祈りの10系統〈銘・言葉テンプレ・結びテンプレ〉。タップで入る／再タップで次の候補 ---------- */
+const SYSTEMS=[
+  {key:"成就", mei:"願いは、かたちになる", deep:["願いが、光に溶けていく"],
+   words:["叶っています","願いは満ちている","望みが引き寄せられる"], closes:["願いは、届いた","かたちに、なる"]},
+  {key:"充溢", mei:"力が、満ちている", deep:["力が、満ちあふれてくる"],
+   words:["力が漲る","内から満ち溢れていく","燃え立つ力"], closes:["力は、満ちた","漲っている"]},
+  {key:"感応", mei:"その気配に、触れる", deep:["大いなる気配に、包まれる"],
+   words:["あなたのそばに","大いなるものへ","気配に触れる"], closes:["たしかに、在った","触れていた"]},
+  {key:"再生", mei:"新しく、生まれる", deep:["古い殻が、ほどけていく"],
+   words:["生まれ変わる","古い私を脱ぎさる","新しくなる"], closes:["新しい私になった","生まれ変わった"]},
+  {key:"護り", mei:"護られている", deep:["光が、あなたを包む護りになる"],
+   words:["護られています","光の結界に","災いは近づかない"], closes:["護られている","結界は、満ちた"]},
+  {key:"鎮め", mei:"波が、静まる", deep:["すべての波が、静まっていく"],
+   words:["心は鎮まる","不安は消えていく","静けさに還る"], closes:["心は、静まった","凪いでいる"]},
+  {key:"手放し", mei:"そっと、手放す", deep:["重いものが、流れ落ちていく"],
+   words:["手放している","重荷は下りている","流れに委ねる"], closes:["手放した","軽く、なった"]},
+  {key:"繋がり", mei:"想いは、届く", deep:["想いが、光を伝い届いていく"],
+   words:["想いは届いている","あなたへ、光を","縁が結ばれる"], closes:["想いは、届いた","繋がっている"]},
+  {key:"満ちる", mei:"満ちて、あふれている", deep:["満たされ、あふれていく"],
+   words:["ありがとう","恵みに満ちている","豊かさが巡る"], closes:["満ち足りている","あふれている"]},
+  {key:"目覚め", mei:"いま、冴えわたる", deep:["意識が、澄んでいく"],
+   words:["意識は冴えている","いま、ここに","研ぎ澄まされる"], closes:["冴えわたった","目覚めている"]}
+];
+function buildChips(wrapId,field,targetId){
+  const wrap=document.getElementById(wrapId), idx={};
+  SYSTEMS.forEach(sys=>{ idx[sys.key]=0;
+    const b=document.createElement("button"); b.textContent=sys.key;
+    b.addEventListener("click",()=>{ const arr=sys[field];
+      document.getElementById(targetId).value=arr[idx[sys.key]%arr.length]; idx[sys.key]++;
+      cfg.system=sys.key; });                       // 系統を記録（誘導の味付けに使う）
+    wrap.appendChild(b);
+  });
+}
+buildChips("word-chips","words","mantra");
+buildChips("closing-chips","closes","closing");
+
+/* ---------- 息の数 ---------- */
+let target=3;const cn=document.getElementById("count-n");
+document.getElementById("minus").addEventListener("click",()=>{target=Math.max(1,target-1);cn.textContent=target;});
+document.getElementById("plus").addEventListener("click",()=>{target=Math.min(10,target+1);cn.textContent=target;});
+document.querySelectorAll("#tempo-seg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#tempo-seg button").forEach(x=>x.classList.toggle("on",x===b));
+  inductTempo=+b.dataset.t;
+}));
+
+/* ---------- 保存トグル＋手動命名 ---------- */
+let saveOn=false;
+const saveToggle=document.getElementById("save-toggle"), saveNameEl=document.getElementById("save-name");
+function prefillName(){ if(!saveNameEl.value.trim()) saveNameEl.value=firstLine(document.getElementById("mantra").value)||""; }
+saveToggle.addEventListener("click",()=>{ saveOn=!saveOn;
+  saveToggle.classList.toggle("on",saveOn);
+  document.getElementById("save-box").textContent=saveOn?"✓":"";
+  saveNameEl.classList.toggle("on",saveOn);
+  if(saveOn) prefillName();
+});
+function savePrayer(){
+  const name=(saveNameEl.value.trim())||firstLine(cfg.words)||"無題";
+  store.push({name,hex:cfg.css,words:cfg.words||"",closing:cfg.closing||"",count:cfg.target,system:cfg.system||null});
+  if(store.length>10) store.splice(0,store.length-10);   // 10を超えたら古いものから消える
+  persist();
+}
+
+/* ---------- 灯す ---------- */
+function beginPractice(){
+  Object.assign(flame,{count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1});initParticles();
+  document.getElementById("veil").classList.add("hide");mode="idle";
+  setTimeout(()=>say(cfg.phrases.length?"灯に触れて、ひと息":"灯に触れて、息を捧げる"),900);
+}
+document.getElementById("begin").addEventListener("click",()=>{
+  cfg.words=document.getElementById("mantra").value.trim();
+  cfg.phrases=splitPhrases(cfg.words);
+  cfg.closing=document.getElementById("closing").value.trim();
+  cfg.target=target;
+  if(saveOn) savePrayer();
+  startInduction();
+});
+
+/* ---------- 入り口の一句（翻案・やさしい口調・ぼかした出典） ---------- */
+const QUOTES=[
+  {q:"形あるものは、いつか移ろう。だから、いまが尊い。", s:"― 仏の教えより", src:"『法句経（ダンマパダ）』", note:"初期仏教の実践的な教えを集めた経典。「無常」の考え。"},
+  {q:"執着を手放すほど、心は軽くなる。", s:"― 仏の教えより", src:"仏教「四諦」の考え", note:"苦しみの源を執着に見る、仏教の基本的な見方。"},
+  {q:"雨だれが石をうがつように、小さな行いも、積もれば大きくなる。", s:"― 仏の教えより", src:"『法句経』", note:"わずかな積み重ねが実を結ぶ、という教え。"},
+  {q:"心を整えることが、世界を整える、はじめの一歩になる。", s:"― 禅の教えより", src:"禅の修行観", note:"外を変える前に、まず己の心を調える。"},
+  {q:"いま、この一息に、心を置いてみる。", s:"― 禅の教えより", src:"禅の「調息」", note:"呼吸に意識を戻すことが、坐禅の基本。"},
+  {q:"比べることをやめると、心は静かになる。", s:"― 仏の教えより", src:"仏教の「分別」を離れる考え", note:"優劣の判断が、苦しみを生むという見方。"},
+  {q:"怒りを、怒りで返さない。そこで、連鎖が止まる。", s:"― 仏の教えより", src:"『法句経』", note:"憎しみは憎しみでは鎮まらない、という趣旨。"},
+  {q:"満たされていると気づけば、いま十分に豊かだ。", s:"― 禅の教えより", src:"禅語「吾唯足知」", note:"足るを知る者は富む、という禅の言葉。"},
+  {q:"一つのことに、ていねいに向かう。それが、道になる。", s:"― 禅の教えより", src:"禅の「作務」", note:"日々の所作そのものを修行とする考え。"},
+  {q:"過ぎたことも、まだ来ぬことも手放し、いまに還る。", s:"― 仏の教えより", src:"仏教の「今ここ」", note:"過去と未来への囚われを離れる教え。"},
+  {q:"してほしいと思うことを、まず自分から人にしてみる。", s:"― キリストの教えより", src:"『新約聖書』（黄金律）", note:"イエスが説いた、対人の基本原則。"},
+  {q:"裁くよりも、まず赦すことをおぼえる。", s:"― キリストの教えより", src:"『新約聖書』山上の説教", note:"人を裁くな、という教えの趣旨。"},
+  {q:"となりにいる人を、自分と同じように大切にする。", s:"― キリストの教えより", src:"『新約聖書』（隣人愛）", note:"「隣人を自分のように愛せ」の趣旨。"},
+  {q:"弱さを認められる人が、ほんとうに強い。", s:"― キリストの教えより", src:"使徒パウロの書簡", note:"弱さのなかにこそ力が働く、という考え。"},
+  {q:"明日を思い煩わない。今日を、今日として生きる。", s:"― キリストの教えより", src:"『新約聖書』山上の説教", note:"明日の心配は明日にまかせよ、の趣旨。"},
+  {q:"与えることのなかに、受け取るよろこびがある。", s:"― キリストの教えより", src:"『新約聖書』使徒言行録", note:"「受けるより与えるが幸い」の趣旨。"},
+  {q:"小さな信じる心が、大きな山をも動かす。", s:"― キリストの教えより", src:"『新約聖書』", note:"からし種ほどの信仰、のたとえ。"},
+  {q:"光は、暗がりのなかでこそ、よく見える。", s:"― キリストの教えより", src:"『新約聖書』ヨハネ福音書", note:"闇は光に勝たなかった、の趣旨。"},
+  {q:"疲れた者は、休んでいい。", s:"― キリストの教えより", src:"『新約聖書』", note:"重荷を負う者よ、休ませよう、の趣旨。"},
+  {q:"持っているものの一部を、そっと分け合う。", s:"― イスラームの教えより", src:"「ザカート（喜捨）」", note:"富を分かち合う、五行のひとつ。"},
+  {q:"焦らず、耐えて待つ人に、道はひらけていく。", s:"― イスラームの教えより", src:"『クルアーン』の「サブル（忍耐）」", note:"忍耐する者と神は共にある、という趣旨。"},
+  {q:"あなたに、背負えない重荷は課されない。", s:"― イスラームの教えより", src:"『クルアーン』第二章の趣旨", note:"人の力を超える試練は与えられない、という慰め。"},
+  {q:"一日に幾度も立ち止まり、天を仰ぐ。", s:"― イスラームの教えより", src:"「サラート（礼拝）」", note:"日に五度、祈りのため日常を止める習慣。"},
+  {q:"まず、慈悲ぶかくあれ。すべては、そこから。", s:"― イスラームの教えより", src:"「バスマラ」", note:"章の冒頭に置かれる、慈悲を称える言葉の趣旨。"},
+  {q:"知を求めよ。ゆりかごから、墓場まで。", s:"― イスラームの教えより", src:"預言者に帰される伝承", note:"生涯、学び続けよ、という言葉。"},
+  {q:"微笑みも、ひとつの施しである。", s:"― イスラームの教えより", src:"ハディース（言行伝承）", note:"善行は大きなものだけではない、という教え。"},
+  {q:"世界をまるごと救えなくても、一人を救えば、それで尊い。", s:"― ユダヤの教えより", src:"『タルムード』", note:"一つの命は一つの世界に等しい、という言葉。"},
+  {q:"学ぶことをやめないかぎり、人はほんとうには老いない。", s:"― ユダヤの教えより", src:"ユダヤの学びの伝統", note:"生涯、学び続けることを尊ぶ文化。"},
+  {q:"いまでなければ、いつ。", s:"― ユダヤの教えより", src:"『ミシュナ』ヒレルの言葉", note:"先延ばしを戒める、有名な問い。"},
+  {q:"自分のためだけなら、自分とは何者か。", s:"― ユダヤの教えより", src:"ヒレルの言葉", note:"自分と他者、両方への責任を問う一句。"},
+  {q:"沈黙は、知恵を守る垣根になる。", s:"― ユダヤの教えより", src:"『ピルケイ・アヴォット（父祖の教え）』", note:"語りすぎないことの価値。"},
+  {q:"平和を、追い求める人であれ。", s:"― ユダヤの教えより", src:"『父祖の教え』", note:"平和を愛し、平和を追う者であれ、の趣旨。"},
+  {q:"手を開く者のもとに、恵みは巡る。", s:"― ユダヤの教えより", src:"「ツェダカ（施し・正義）」", note:"施しは慈善であり、同時に正義とされる。"},
+  {q:"自分がされたくないことは、人にもしない。", s:"― 儒の教えより", src:"『論語』", note:"孔子の説いた「恕」の核心。"},
+  {q:"あやまちを改めないこと。それこそが、ほんとうのあやまち。", s:"― 孔子の言葉より", src:"『論語』衛霊公", note:"過ちて改めざる、是を過ちという。"},
+  {q:"学んで考え、考えて学ぶ。どちらも欠かせない。", s:"― 孔子の言葉より", src:"『論語』為政", note:"学びと思索は両輪、という教え。"},
+  {q:"知っていることを知り、知らないことを知らないとする。それが、知だ。", s:"― 孔子の言葉より", src:"『論語』為政", note:"知の誠実さについての一句。"},
+  {q:"三人いれば、そこに必ず、自分の師がいる。", s:"― 孔子の言葉より", src:"『論語』述而", note:"誰からも学べる、という謙虚さ。"},
+  {q:"遠い先を思わなければ、近くに憂いが生まれる。", s:"― 孔子の言葉より", src:"『論語』衛霊公", note:"遠慮なければ近憂あり。"},
+  {q:"水はやわらかいのに、かたい岩をも、いつか削る。", s:"― 老子の言葉より", src:"『老子（道徳経）』", note:"上善は水の如し、柔よく剛を制す。"},
+  {q:"何もしていないように見えて、すべては静かに巡っている。", s:"― 道家の考えより", src:"『老子』「無為」", note:"作為せずして成る、という思想。"},
+  {q:"足るを知る人は、いつも豊かだ。", s:"― 老子の言葉より", src:"『老子』", note:"足るを知る者は富む。"},
+  {q:"千里の道も、足もとの一歩から始まる。", s:"― 老子の言葉より", src:"『老子』", note:"千里の行も足下より始まる。"},
+  {q:"うまくいっているときほど、静かに退く。", s:"― 老子の言葉より", src:"『老子』", note:"功成り名遂げて身退くは、天の道。"},
+  {q:"しなやかなものは、折れずに残る。", s:"― 荘子の考えより", src:"『荘子』", note:"役立たずに見えるものが、天寿を全うする、の趣旨。"},
+  {q:"結果は手放して、いま為すべきことに、ただ向かう。", s:"― インドの教えより", src:"『バガヴァッド・ギーター』", note:"行為の結果に執着するな、という教え。"},
+  {q:"呼吸を整えると、心もおのずと静まっていく。", s:"― ヨーガの教えより", src:"『ヨーガ・スートラ』", note:"プラーナーヤーマ（調気）の考え。"},
+  {q:"心の波が静まったとき、ほんとうの自分が見える。", s:"― ヨーガの教えより", src:"『ヨーガ・スートラ』冒頭", note:"ヨーガとは心の作用を止滅すること。"},
+  {q:"あなたのなかにも、大いなるものが宿っている。", s:"― インドの教えより", src:"ウパニシャッド「梵我一如」", note:"個の魂と宇宙は本来ひとつ、という思想。"},
+  {q:"いま在ることに、ただ気づいている。", s:"― ヨーガの教えより", src:"ヨーガの「サークシー（目撃者）」", note:"判断せず、ただ観る意識。"},
+  {q:"執着も、憎しみも手放したところに、平安がある。", s:"― インドの教えより", src:"『バガヴァッド・ギーター』", note:"心の平静（サマトヴァ）を説く。"},
+  {q:"まず、けがれを祓い、心を清らかに。", s:"― 神道の心より", src:"神道の「祓（はらえ）」", note:"罪や穢れを祓い清める、神道の基本。"},
+  {q:"米一粒にも、八百万の神が宿る。", s:"― 神道の心より", src:"「八百万の神」", note:"あらゆるものに神性を見る、日本の感性。"},
+  {q:"自然に逆らわず、めぐる季節とともに生きる。", s:"― 神道の心より", src:"惟神（かんながら）の道", note:"自然の理にしたがう生き方。"},
+  {q:"感謝の心が、日々を明るくする。", s:"― 日本の心より", src:"「おかげさま」の精神", note:"見えない支えへの感謝を尊ぶ文化。"},
+  {q:"もったいない。ものにも、いのちがある。", s:"― 日本の心より", src:"「もったいない」", note:"ものを大切にする、日本古来の感覚。"},
+  {q:"変えられないことは受け入れ、変えられることに、力を注ぐ。", s:"― ストア派の考えより", src:"エピクテトス『提要』", note:"自分の力の及ぶ範囲を見極める。"},
+  {q:"出来事そのものより、それをどう見るかが、心を決める。", s:"― ストア派の考えより", src:"エピクテトス『提要』", note:"人を乱すのは出来事でなく、それへの見方。"},
+  {q:"今日が最後の一日でも悔いないように、生きてみる。", s:"― ストア派の考えより", src:"ストア派「メメント・モリ」", note:"死を思うことで、いまを大切にする。"},
+  {q:"起きたことは、起きたこと。次に、どうするかだ。", s:"― ストア派の考えより", src:"マルクス・アウレリウス『自省録』", note:"過去に囚われず、次の一手に向かう。"},
+  {q:"他人の評価ではなく、自分の行いを見つめる。", s:"― ストア派の考えより", src:"『自省録』", note:"外の声より、内なる正しさを基準に。"},
+  {q:"朝、目覚めたら、生きていることをひとつの恵みと思う。", s:"― ストア派の考えより", src:"マルクス・アウレリウス『自省録』", note:"一日の始まりへの感謝。"},
+  {q:"怒りは、たいてい自分を苦しめるだけで終わる。", s:"― ストア派の考えより", src:"セネカ『怒りについて』", note:"怒りの無益さを説く。"},
+  {q:"持たないことを嘆くより、あるものに目を向ける。", s:"― ストア派の考えより", src:"セネカの書簡", note:"欠乏でなく、充足に心を向ける。"},
+  {q:"自分が何も知らないと気づくこと。そこから、知が始まる。", s:"― ソクラテスの言葉より", src:"プラトン『ソクラテスの弁明』", note:"「無知の知」。"},
+  {q:"多すぎず、少なすぎず。ちょうどよさのなかに、しあわせがある。", s:"― ギリシアの哲学より", src:"アリストテレス『ニコマコス倫理学』", note:"「中庸（メソテース）」。"},
+  {q:"吟味されない人生は、生きるに値しない。", s:"― ソクラテスの言葉より", src:"プラトン『ソクラテスの弁明』", note:"省みることの大切さ。"},
+  {q:"幸福は、良く生きることそのものにある。", s:"― ギリシアの哲学より", src:"アリストテレス「エウダイモニア」", note:"快楽でなく、善き活動に幸福を見る。"},
+  {q:"まず、汝自身を知れ。", s:"― ギリシアの言葉より", src:"デルポイの神殿の格言", note:"古代ギリシアに刻まれた、自己認識の勧め。"},
+  {q:"この一日を、大切に生きる。", s:"― ギリシア・ローマの言葉より", src:"ホラティウス「カルペ・ディエム」", note:"今日という日を、味わい摘め。"},
+  {q:"千里の道も、一歩から。", s:"― 世界の諺より", src:"由来には諸説あり（東洋の格言）", note:"大きな事も、小さな一歩から。"},
+  {q:"急がば、まわれ。", s:"― 世界の諺より", src:"日本の諺", note:"危うい近道より、安全な回り道を。"},
+  {q:"転んでも、また起き上がればいい。何度でも。", s:"― 世界の諺より", src:"「七転び八起き」", note:"何度倒れても立ち上がる粘り。"},
+  {q:"木を植えるのに一番いい時は、二十年前。次にいいのは、今日。", s:"― 世界の諺より", src:"由来には諸説あり", note:"遅すぎることはない、今日から始めよ。"},
+  {q:"一日一日が、小さな一生だと思って生きる。", s:"― 世界の諺より", src:"由来には諸説あり", note:"一日を大切にする心構え。"},
+  {q:"静かな水こそ、深く流れている。", s:"― 世界の諺より", src:"西洋の諺", note:"物静かな人ほど、内に深いものを持つ。"},
+  {q:"明けない夜は、ない。", s:"― 世界の諺より", src:"世界各地に伝わる言葉", note:"どんな困難にも、終わりが来る。"},
+  {q:"遠くへ行きたいなら、みんなで行け。", s:"― 世界の諺より", src:"アフリカに伝わる諺", note:"早く行くなら一人、遠くへ行くなら共に。"},
+  {q:"小さな斧でも、打ち続ければ大木を倒す。", s:"― 世界の諺より", src:"世界各地の格言", note:"継続の力。"},
+  {q:"昨日はもう戻らない。明日はまだ来ない。あるのは、今日だけ。", s:"― 世界の諺より", src:"由来には諸説あり", note:"今日を生きることの大切さ。"},
+  {q:"感謝は、心のいちばん美しい記憶。", s:"― 世界の諺より", src:"西洋に伝わる言葉", note:"感謝を忘れない心。"},
+  {q:"大切なのは、問い続けることを、やめないこと。", s:"― ある物理学者の言葉より", src:"アインシュタインに帰される言葉", note:"好奇心を持ち続けることの大切さ（逐語ではなく趣旨）。"},
+  {q:"想像力は、知識よりも遠くへ、あなたを連れていく。", s:"― ある物理学者の言葉より", src:"アインシュタインに帰される言葉", note:"想像力の価値を語った言葉の趣旨。"},
+  {q:"恐れるのではなく、理解する。理解が、恐れを解く。", s:"― ある科学者の言葉より", src:"マリ・キュリーに帰される言葉", note:"未知を恐れず、理解しようとする姿勢。"},
+  {q:"私たちは、星のかけらでできている。", s:"― ある天文学者の言葉より", src:"カール・セーガンに帰される言葉", note:"人も宇宙の一部だ、という視点。"},
+  {q:"巨人の肩に乗れば、より遠くが見える。", s:"― ある科学者の言葉より", src:"ニュートンに帰される言葉", note:"先人の積み重ねの上に立つ、という謙虚さ。"},
+  {q:"昨日から学び、今日を生き、明日を望む。", s:"― ある思索家の言葉より", src:"出典には諸説あり", note:"時間との向き合い方。"},
+  {q:"幸せは香水のよう。人にふりかければ、自分にもかかる。", s:"― ある思索家の言葉より", src:"出典には諸説あり", note:"与えた幸福が、自分に返るという趣旨。"}
+];
+function drawGateOrb(t){
+  const cx=W/2, cy=H*(1-BASE_Y), col="#bcd4ff";
+  const bp=Math.sin(t*2*Math.PI/6.5);
+  const R=Math.min(W,H)*0.1*(1+0.12*bp);
+  fx.save();
+  let g=fx.createRadialGradient(cx,cy,0,cx,cy,R*1.9);
+  g.addColorStop(0,col); g.addColorStop(0.5,col+"44"); g.addColorStop(1,col+"00");
+  fx.globalAlpha=0.55; fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R*1.9,0,6.283);fx.fill();
+  fx.globalAlpha=1;
+  g=fx.createRadialGradient(cx,cy,0,cx,cy,R);
+  g.addColorStop(0,"rgba(255,255,255,0.97)"); g.addColorStop(0.42,col); g.addColorStop(1,col+"00");
+  fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R,0,6.283);fx.fill();
+  fx.restore();
+}
+const gQ=document.getElementById("gate-quote"), gS=document.getElementById("gate-src"), gGo=document.getElementById("gate-go");
+function initGate(){
+  const pick=QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  gQ.innerHTML=esc(balanceBreak(pick.q)); gS.textContent=pick.s;
+  document.body.classList.remove("dark");
+  nightfallEl.style.opacity=1;                       // 闇の入り口
+  document.getElementById("veil").classList.add("hide");
+  gateEl.classList.add("on"); mode="gate";
+  setTimeout(()=>{ gQ.style.opacity=1; gS.style.opacity=1; gGo.style.opacity=1; }, 400);
+}
+let gateGone=false;
+function gateGo(){
+  if(gateGone||mode!=="gate")return; gateGone=true;
+  [gQ,gS,gGo].forEach(el=>{ el.style.transition="opacity .6s ease"; el.style.opacity=0; });
+  const veil=document.getElementById("veil");
+  renderHome(); showStep(store.length?"home":"color");
+  veil.style.transition="opacity 3s ease";           // 夜明け：白のホームが3秒かけて明ける
+  requestAnimationFrame(()=>veil.classList.remove("hide"));
+  setTimeout(()=>{
+    mode="setup"; gateEl.classList.remove("on"); nightfallEl.style.opacity=0;
+    veil.style.transition="opacity .8s ease";
+  }, 3000);
+}
+gateEl.addEventListener("pointerdown",gateGo);
+
+/* ---------- 初期化 ---------- */
+setColor("#E6863A"); syncSliders("#E6863A");
+loadStore(); initGate();
+resize(); initParticles(); window.addEventListener("resize",resize);
+requestAnimationFrame(frame);
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('service-worker.js').catch(function(){});});}</script>
+</body>
+</html>
