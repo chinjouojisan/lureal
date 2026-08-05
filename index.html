@@ -436,7 +436,8 @@ function buildInductLines(){
     if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t})); });// 深化に系統の一文
   return L;
 }
-function lineTiming(L){ return {fin:FADE,fout:FADE}; }
+function lineTiming(L){ return L.count ? {fin:1.0,fout:1.0} : {fin:FADE,fout:FADE}; }
+function curFade(){ const L=LINES[iIdx]; return (L&&L.count)?1.0:FADE; }   // 3・2・1のカウントは2秒（1秒+1秒）に短縮
 function setupLine(i){
   iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
   inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
@@ -446,23 +447,23 @@ function setupLine(i){
 }
 function nextLine(){ if(iIdx+1>=LINES.length){ diveStart(); return; } setupLine(iIdx+1); }
 function updateInduction(dt){
-  iT+=dt;
+  iT+=dt; const f=curFade();
   if(iPhase==="in"){
-    inductTextEl.style.opacity=Math.min(1,iT/FADE);
-    if(iT>=FADE){ iPhase="out"; iT=0; inductTextEl.style.opacity=1; inductLevel=inductPeak-INDUCT_CONTRACT; }  // holdなし、即座に縮みへ
+    inductTextEl.style.opacity=Math.min(1,iT/f);
+    if(iT>=f){ iPhase="out"; iT=0; inductTextEl.style.opacity=1; inductLevel=inductPeak-INDUCT_CONTRACT; }  // holdなし、即座に縮みへ
   } else {
-    inductTextEl.style.opacity=Math.max(0,1-iT/FADE);
-    if(iT>=FADE) nextLine();
+    inductTextEl.style.opacity=Math.max(0,1-iT/f);
+    if(iT>=f) nextLine();
   }
 }
 function easeInOutSine(p){ return 0.5-0.5*Math.cos(Math.PI*p); }   // 両端で速度ゼロ→切り替わりでカクッとならない
 function inductLightDepth(){                             // 光の膨張・収縮（テキストのfin/foutと連動）
-  const p=Math.min(1,iT/FADE), e=easeInOutSine(p);
+  const p=Math.min(1,iT/curFade()), e=easeInOutSine(p);
   if(iPhase==="in") return inductLevel+INDUCT_EXPAND*e;
   return inductPeak-INDUCT_CONTRACT*e;
 }
 function inductHeat(){                                    // 膨張の頂点で白熱が増し、土台・補助の色を飲み込む（目標色は外側に必ず残す）
-  const p=Math.min(1,iT/FADE), e=easeInOutSine(p);
+  const p=Math.min(1,iT/curFade()), e=easeInOutSine(p);
   return iPhase==="in" ? (0.7+0.7*e) : (0.7+0.7*(1-e));
 }
 function startInduction(){
@@ -478,7 +479,7 @@ function startInduction(){
 }
 function inductAdvance(){
   if(!inductActive||diving)return;
-  if(iPhase==="in" && iT<lineTiming(LINES[iIdx]).fin){ iPhase="hold"; iT=0; inductTextEl.style.opacity=1; } // 出現を一気に完了
+  if(iPhase==="in"){ iPhase="out"; iT=0; inductTextEl.style.opacity=1; inductLevel=inductPeak-INDUCT_CONTRACT; } // 出現を一気に完了、そのまま自然な収縮へ
   else nextLine();                                                                                          // 次の文へ
 }
 function inductSkip(){ if(!inductActive||diving)return; diveStart(); }
