@@ -1259,7 +1259,8 @@ function gateGo(){
   veil.style.transition="opacity 3s ease";           // 夜明け：白のホームが3秒かけて明ける
   requestAnimationFrame(()=>veil.classList.remove("hide"));
   setTimeout(()=>{
-    mode="setup"; gateEl.classList.remove("on"); nightfallEl.style.opacity=0;
+    if(mode==="gate") mode="setup";   // ユーザーが既に祈りを選んで先へ進んでいたら、上書きしない
+    gateEl.classList.remove("on"); nightfallEl.style.opacity=0;
     veil.style.transition="opacity .8s ease";
   }, 3000);
 }
