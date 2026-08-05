@@ -5,13 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Lureal">
-<title>Lureal</title>
+<meta name="apple-mobile-web-app-title" content="ともしび">
+<title>ともしび</title>
 <style>
   :root{
     --void-0:#05060d; --void-1:#080b1a; --void-2:#0c1030;
@@ -30,9 +29,10 @@
       radial-gradient(120% 85% at 50% 56%, #04050c 0%, #070b1e 55%, #0b1236 100%),
       radial-gradient(100% 70% at 50% -8%, #101a44 0%, transparent 55%),
       linear-gradient(180deg, var(--void-1) 0%, var(--void-0) 100%);}
-  #gl,#fx{position:fixed;inset:0;width:100%;height:100%;display:block;}
+  #gl,#fx,#ripple{position:fixed;inset:0;width:100%;height:100%;display:block;}
   #gl{z-index:0;pointer-events:none;}
   #fx{z-index:1;pointer-events:auto;}
+  #ripple{z-index:6;pointer-events:none;}
 
   #whisper{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 7vh);
     text-align:center;z-index:3;pointer-events:none;font-size:14px;letter-spacing:.28em;
@@ -67,6 +67,23 @@
   .seg button{font-family:var(--sans);font-size:12px;letter-spacing:.12em;color:var(--ink-soft);
     background:transparent;border:none;padding:11px 22px;cursor:pointer;transition:.2s;}
   .seg button.on{background:var(--glow);color:var(--void-0);}
+
+  .rseg{display:flex;margin-bottom:14px;border:1px solid var(--line);border-radius:999px;overflow:hidden;}
+  .rseg button{font-family:var(--sans);font-size:12px;letter-spacing:.12em;color:var(--ink-soft);
+    background:transparent;border:none;padding:9px 18px;cursor:pointer;transition:.2s;flex:1;}
+  .rseg button.on{background:var(--glow);color:var(--void-0);}
+  .rseg button[hidden]{display:none;}
+
+  .ratio-wrap{width:100%;margin-bottom:16px;}
+  .ratio-row{display:flex;align-items:center;justify-content:space-between;padding:5px 2px;}
+  .ratio-row[hidden]{display:none;}
+  .ratio-row .rlabel{font-family:var(--sans);font-size:12px;color:var(--ink-soft);width:52px;}
+  .ratio-row .rbtns{display:flex;align-items:center;gap:14px;}
+  .ratio-row .rval{font-size:17px;color:var(--glow);min-width:34px;text-align:center;}
+  .ratio-row button{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;
+    color:var(--ink-soft);font-size:15px;cursor:pointer;line-height:1;}
+  .ratio-row button:active{background:var(--glow);color:var(--void-0);}
+  .ratio-hint{font-family:var(--sans);font-size:10.5px;color:var(--ink-faint);text-align:center;margin:2px 0 12px;}
 
   .picker{display:none;flex-direction:column;align-items:center;width:100%;}
   .picker.on{display:flex;}
@@ -177,6 +194,7 @@
 <div id="nightfall"></div>
 <canvas id="gl"></canvas>
 <canvas id="fx"></canvas>
+<canvas id="ripple"></canvas>
 <div id="gate"><div id="gate-quote"></div><div id="gate-src"></div><div id="gate-go">祈りへ</div></div>
 <div id="whisper"></div>
 <div id="flash"></div>
@@ -187,7 +205,7 @@
 <div id="ending"><div id="ending-main"></div><div id="ending-sub"></div></div>
 
 <div class="veil" id="veil">
-  <div class="wordmark">Lureal<span class="en">ルリアル</span></div>
+  <div class="wordmark">ともしび<span class="en">EMBER</span></div>
 
   <div class="step" id="step-home">
     <div class="ask">灯した祈り。</div>
@@ -197,6 +215,31 @@
 
   <div class="step" id="step-color">
     <div class="ask">あなたに、応える色。</div>
+    <div class="rseg" id="ccount-seg">
+      <button data-n="1" class="on">1色</button>
+      <button data-n="2">2色</button>
+      <button data-n="3">3色</button>
+    </div>
+    <div class="rseg" id="role-seg" style="display:none">
+      <button data-role="core" class="on">土台</button>
+      <button data-role="support" hidden>補助</button>
+      <button data-role="thema">目標</button>
+    </div>
+    <div class="ratio-wrap" id="ratio-wrap" style="display:none">
+      <div class="ratio-row" data-role="core">
+        <span class="rlabel">土台</span>
+        <div class="rbtns"><button class="rminus" data-role="core">−</button><span class="rval" id="rval-core">1.9</span><button class="rplus" data-role="core">＋</button></div>
+      </div>
+      <div class="ratio-row" data-role="support" hidden>
+        <span class="rlabel">補助</span>
+        <div class="rbtns"><button class="rminus" data-role="support">−</button><span class="rval" id="rval-support">0.1</span><button class="rplus" data-role="support">＋</button></div>
+      </div>
+      <div class="ratio-row" data-role="thema">
+        <span class="rlabel">目標</span>
+        <div class="rbtns"><button class="rminus" data-role="thema">−</button><span class="rval" id="rval-thema">8.0</span><button class="rplus" data-role="thema">＋</button></div>
+      </div>
+      <div class="ratio-hint">育つほど、この比率が入れ替わっていきます</div>
+    </div>
     <div class="seg">
       <button data-mode="pick" class="on">選ぶ</button>
       <button data-mode="birth">誕生日で</button>
@@ -278,27 +321,30 @@
    色は燃料、言葉は糧、粒は幸運（青白＋金）。記録しない。
    ============================================================ */
 const DPR=Math.min(window.devicePixelRatio||1,2);
-const glc=document.getElementById("gl"), fxc=document.getElementById("fx");
+const glc=document.getElementById("gl"), fxc=document.getElementById("fx"), rpc=document.getElementById("ripple");
 const fx=fxc.getContext("2d");
+const rpx=rpc.getContext("2d");
 const flashEl=document.getElementById("flash");
 const nightfallEl=document.getElementById("nightfall");
 const gateEl=document.getElementById("gate");
 let W=0,H=0;
 function resize(){
   W=innerWidth;H=innerHeight;
-  [glc,fxc].forEach(c=>{c.width=W*DPR;c.height=H*DPR;c.style.width=W+"px";c.style.height=H+"px";});
+  [glc,fxc,rpc].forEach(c=>{c.width=W*DPR;c.height=H*DPR;c.style.width=W+"px";c.style.height=H+"px";});
   fx.setTransform(DPR,0,0,DPR,0,0);
+  rpx.setTransform(DPR,0,0,DPR,0,0);
   if(gl){gl.viewport(0,0,glc.width,glc.height);}
 }
 
-const cfg={ rgb:[0.90,0.525,0.227], target:3, phrases:[], css:"#E6863A", closing:"", system:null };
+const cfg={ rgb:[0.90,0.525,0.227], target:3, phrases:[], css:"#E6863A", closing:"", system:null,
+  colors:{core:null,support:null,thema:null}, colorCount:1, ratio:{core:1.9,support:0.1,thema:8.0} };
 
 /* ---------- WebGL 炎（乱流ノイズ・発光） ---------- */
 let gl=null, prog=null, U={};
 const VS=`attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}`;
 const FS=`
 precision highp float;
-uniform vec2 uRes; uniform float uTime, uScale, uAlpha, uHeat, uBaseY; uniform vec3 uColor;
+uniform vec2 uRes; uniform float uTime, uScale, uAlpha, uHeat, uBaseY, uB1, uB2; uniform vec3 uCore, uSupport, uThema;
 float hash(vec2 p){p=fract(p*vec2(123.34,345.45));p+=dot(p,p+34.345);return fract(p.x*p.y);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);
   float a=hash(i),b=hash(i+vec2(1.,0.)),c=hash(i+vec2(0.,1.)),d=hash(i+vec2(1.,1.));
@@ -313,8 +359,12 @@ void main(){
   float body=smoothstep(1.05,0.10,d);                 // 芯は不透明、縁で減衰
   float halo=exp(-d*d*1.5)*0.42;                       // 柔らかな暈
   float inten=(body+halo)*breath*shim;
-  float whiteness=clamp(smoothstep(0.55,0.0,d)+(uHeat-0.7)*1.15,0.0,1.0); // 中心白熱、熱で外へ
-  vec3 base=uColor, col=mix(base,vec3(1.0),whiteness);
+  float heatFall=smoothstep(0.8,0.2,d);                               // 白熱は中心ほど強く、外側（目標色の帯）にはほぼ効かない
+  float whiteness=clamp(smoothstep(0.55,0.0,d)+(uHeat-0.7)*1.15*heatFall,0.0,1.0); // 中心白熱、熱で外へ（外側の色は必ず残る）
+  float band=0.02;                                     // 土台→補助→目標、境界だけ軽くぼかし、帯そのものは独立して見える
+  vec3 base=mix(uCore,uSupport,smoothstep(uB1-band,uB1+band,d));
+  base=mix(base,uThema,smoothstep(uB2-band,uB2+band,d));
+  vec3 col=mix(base,vec3(1.0),whiteness);
   float alpha=clamp(inten,0.0,1.0)*uAlpha;
   gl_FragColor=vec4(col,alpha);
 }`;
@@ -331,7 +381,7 @@ function initGL(){
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
   const loc=gl.getAttribLocation(prog,"a"); gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
-  ["uRes","uTime","uScale","uAlpha","uHeat","uBaseY","uColor"].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
+  ["uRes","uTime","uScale","uAlpha","uHeat","uBaseY","uB1","uB2","uCore","uSupport","uThema"].forEach(k=>U[k]=gl.getUniformLocation(prog,k));
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
   gl.clearColor(0,0,0,0);
   return true;
@@ -340,7 +390,7 @@ const hasGL=initGL();
 
 /* ---------- 状態 ---------- */
 const BASE_Y=0.44, REST=0.9, GROW=0.13, INHALE_SEC=4.2, BLOOM_BIG=2.1, BLOOM_EXPAND=5.0;
-const flame={count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1};
+const flame={count:0,intake:0,absorbed:0,lineProg:0,pulse:0,pv:0,bloom:0,alpha:1};
 let mode="setup", holding=false, settleT=0, restNeeded=false;
 
 /* ===== 催眠誘導（凝視・白背景・光と繋がる。フレーム駆動でジワッと） ===== */
@@ -349,9 +399,10 @@ const inductTextEl=document.getElementById("induct-text");
 const inductSkipEl=document.getElementById("induct-skip");
 let inductTempo=1;
 const TEMPO=[{breath:8.0},{breath:6.0},{breath:4.5}];   // 呼吸周期のみ（速さは滞在で調整）
-const FADE=3.0;                                          // 出る/消える＝3秒
-const HOLD=[2.6,1.8,1.0];                                // とどまる：ゆっくり/ふつう/はやい
-let inductActive=false, iIdx=0, iPhase="in", iT=0, inductDepth=0, inductBreath=6.0, inductPulse=0, inductPulseV=0;
+const FADE=6.0;                                          // 出る/消える＝6秒（holdなし）
+const INDUCT_EXPAND=0.32, INDUCT_CONTRACT=0.20;          // 可動域を拡大。膨張率＞収縮率で、じわじわ育っていく
+let inductActive=false, iIdx=0, iPhase="in", iT=0, inductLevel=0, inductPeak=0, inductBreath=6.0;
+let inductDepth=0;   // ダイブ演出（収束・拡散）専用。誘導中の光の大きさとは別管理
 let diving=false, diveT=0, divePhase="";
 const BASE_LINES=[
   {t:"さあ楽にして、光を見つめて"},
@@ -385,25 +436,37 @@ function buildInductLines(){
     if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t})); });// 深化に系統の一文
   return L;
 }
-function lineTiming(L){ return {fin:FADE,hold:HOLD[inductTempo],fout:FADE}; }
+function lineTiming(L){ return {fin:FADE,fout:FADE}; }
 function setupLine(i){
   iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
-  inductDepth=Math.min(1.0, i/(LINES.length-3));
-  if(L.count) inductPulseV+=3.0;
+  inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
   inductTextEl.classList.toggle("count", !!L.count); inductTextEl.classList.remove("final");
   inductTextEl.classList.toggle("mei", !!L.mei);
   inductTextEl.innerHTML=esc(L.t); inductTextEl.style.opacity=0;
 }
 function nextLine(){ if(iIdx+1>=LINES.length){ diveStart(); return; } setupLine(iIdx+1); }
 function updateInduction(dt){
-  const tm=lineTiming(LINES[iIdx]); iT+=dt;
-  if(iPhase==="in"){ inductTextEl.style.opacity=Math.min(1,iT/tm.fin);
-    if(iT>=tm.fin){iPhase="hold";iT=0;inductTextEl.style.opacity=1;} }
-  else if(iPhase==="hold"){ inductTextEl.style.opacity=1; if(iT>=tm.hold){iPhase="out";iT=0;} }
-  else { inductTextEl.style.opacity=Math.max(0,1-iT/tm.fout); if(iT>=tm.fout) nextLine(); }
+  iT+=dt;
+  if(iPhase==="in"){
+    inductTextEl.style.opacity=Math.min(1,iT/FADE);
+    if(iT>=FADE){ iPhase="out"; iT=0; inductTextEl.style.opacity=1; inductLevel=inductPeak-INDUCT_CONTRACT; }  // holdなし、即座に縮みへ
+  } else {
+    inductTextEl.style.opacity=Math.max(0,1-iT/FADE);
+    if(iT>=FADE) nextLine();
+  }
+}
+function easeInOutSine(p){ return 0.5-0.5*Math.cos(Math.PI*p); }   // 両端で速度ゼロ→切り替わりでカクッとならない
+function inductLightDepth(){                             // 光の膨張・収縮（テキストのfin/foutと連動）
+  const p=Math.min(1,iT/FADE), e=easeInOutSine(p);
+  if(iPhase==="in") return inductLevel+INDUCT_EXPAND*e;
+  return inductPeak-INDUCT_CONTRACT*e;
+}
+function inductHeat(){                                    // 膨張の頂点で白熱が増し、土台・補助の色を飲み込む（目標色は外側に必ず残す）
+  const p=Math.min(1,iT/FADE), e=easeInOutSine(p);
+  return iPhase==="in" ? (0.7+0.7*e) : (0.7+0.7*(1-e));
 }
 function startInduction(){
-  inductActive=true; inductDepth=0; diving=false; inductPulse=0; inductPulseV=0;
+  inductActive=true; inductLevel=0; inductPeak=INDUCT_EXPAND; diving=false;
   inductBreath=TEMPO[inductTempo].breath;
   LINES=buildInductLines();                          // 系統で味付け（銘＋深化の一文）
   document.getElementById("veil").classList.add("hide");
@@ -423,19 +486,22 @@ function diveStart(){ if(diving)return; diving=true; diveT=0; divePhase="flood";
   inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0"; buzz([30,50,200]); }
 inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return; inductAdvance(); });
 inductSkipEl.addEventListener("pointerdown",e=>{ e.stopPropagation(); inductSkip(); });
-function drawInductOrb(t){
+/* ---------- 帰り道：開花をそのまま3回繰り返す（本編のGL描画・粒子をそのまま流用） ---------- */
+const RING_DUR=21.05;   // 広がりきってから真っ白まで8秒になるよう調整（(1-0.62)*21.05≈8秒）
+const WARP_BLOOM_EXPAND=10.5;   // 本編の開花(5.0)よりずっと大きく広がる。時間も同じ比率で伸ばしてあるので、序盤の広がる速さ（テンポ）は変わらない
+let warpTextAlpha=0;   // 結びの文字（白・薄く）。最初のサイクルでじんわり現れ、最後の開花で一緒に白へ溶ける
+function drawWarpText(t){
+  if(mode!=="warpbloom"||warpTextAlpha<=0.01)return;
+  const msg=(cfg.closing&&cfg.closing.trim())||"祈りは、光になった";
   const cx=W/2, cy=H*(1-BASE_Y);
-  const bp=Math.sin(t*2*Math.PI/inductBreath);
-  const baseScale=1+inductDepth*1.5+inductPulse;
-  const R=Math.min(W,H)*0.095*(1+0.16*bp)*baseScale;
+  const flicker=0.75+0.25*Math.sin(t*0.55);
   fx.save();
-  let g=fx.createRadialGradient(cx,cy,0,cx,cy,R*1.9);
-  g.addColorStop(0,cfg.css); g.addColorStop(0.5,cfg.css+"44"); g.addColorStop(1,cfg.css+"00");
-  fx.globalAlpha=0.55; fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R*1.9,0,6.283);fx.fill();
-  fx.globalAlpha=1;
-  g=fx.createRadialGradient(cx,cy,0,cx,cy,R);
-  g.addColorStop(0,"rgba(255,255,255,0.97)"); g.addColorStop(0.42,cfg.css); g.addColorStop(1,cfg.css+"00");
-  fx.fillStyle=g; fx.beginPath();fx.arc(cx,cy,R,0,6.283);fx.fill();
+  fx.globalAlpha=Math.min(0.32,warpTextAlpha*0.34)*flicker;   // 読めるか読めないかくらいの薄さ
+  fx.fillStyle="rgba(255,255,255,1)";
+  fx.shadowColor="rgba(255,255,255,0.9)"; fx.shadowBlur=Math.min(W,H)*0.05;
+  fx.textAlign="center";
+  fx.font=(Math.min(W,H)*0.052)+'px "Hiragino Mincho ProN","Yu Mincho",serif';
+  fx.fillText(msg,cx,cy);
   fx.restore();
 }
 
@@ -446,7 +512,7 @@ function say(t){if(t===wcur)return;wcur=t;whisper.classList.remove("on");
 function easeOut(x){return 1-Math.pow(1-x,3);}
 function easeIn(x){return x*x;}
 
-/* ---------- 粒子（青白＋金のボケ） ---------- */
+/* ---------- 粒子（土台・補助・目標の3色。比率に応じて出現） ---------- */
 function makeSprite(inner,mid){
   const s=64,c=document.createElement("canvas");c.width=c.height=s;
   const x=c.getContext("2d"),g=x.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2);
@@ -455,22 +521,46 @@ function makeSprite(inner,mid){
 }
 const sprBlue=makeSprite("rgba(232,242,255,1)","rgba(150,190,255,0.45)");
 const sprGold=makeSprite("rgba(255,244,210,1)","rgba(242,201,76,0.5)");
+function roleSpriteFor(hex){
+  const rgb=hexToRgb(hex||"#E6863A");
+  const inner="rgba("+Math.min(255,Math.round(rgb[0]*255+70))+","+Math.min(255,Math.round(rgb[1]*255+70))+","+Math.min(255,Math.round(rgb[2]*255+70))+",1)";
+  const mid="rgba("+Math.round(rgb[0]*255)+","+Math.round(rgb[1]*255)+","+Math.round(rgb[2]*255)+",0.5)";
+  return makeSprite(inner,mid);
+}
+let sprCore=sprGold, sprSupport=sprGold, sprThema=sprBlue;   // 初期値。実際の色は使用直前にrefreshRoleSprites()で反映
+function refreshRoleSprites(){
+  const coreHex=(cfg.colors.core&&cfg.colors.core.hex)||cfg.css||"#E6863A";
+  const supportHex=(cfg.colors.support&&cfg.colors.support.hex)||coreHex;
+  const themaHex=(cfg.colors.thema&&cfg.colors.thema.hex)||coreHex;
+  sprCore=roleSpriteFor(coreHex); sprSupport=roleSpriteFor(supportHex); sprThema=roleSpriteFor(themaHex);
+}
+function pickRoleSprite(){                                    // 比率に応じて、どの色の粒子として生まれるかを決める
+  const cc=cfg.colorCount, r=cfg.ratio;
+  if(cc<=1) return sprCore;
+  if(cc===2){ const sum=r.core+r.thema; return Math.random()*sum<r.core?sprCore:sprThema; }
+  const sum=r.core+r.support+r.thema, x=Math.random()*sum;
+  if(x<r.core) return sprCore;
+  if(x<r.core+r.support) return sprSupport;
+  return sprThema;
+}
 let particles=[];
 function initParticles(){
+  refreshRoleSprites();
   particles=[];
   for(let i=0;i<70;i++){
-    const gold=Math.random()<0.22;
     particles.push({x:Math.random()*W,y:Math.random()*H,z:0.3+Math.random()*1.4,
       vx:(Math.random()-0.5)*0.15,vy:-(0.05+Math.random()*0.25),
-      gold,ph:Math.random()*6.283,tw:0.4+Math.random()*0.9,a:0.22+Math.random()*0.5,decay:0});
+      spr:pickRoleSprite(),ph:Math.random()*6.283,tw:0.4+Math.random()*0.9,a:0.22+Math.random()*0.5,decay:0});
   }
 }
 function goldRise(cx,cy){
+  refreshRoleSprites();
   for(let i=0;i<30;i++){particles.push({x:cx+(Math.random()-0.5)*W*0.14,y:cy+(Math.random()-0.2)*70,
     z:0.4+Math.random()*1.0,vx:(Math.random()-0.5)*0.5,vy:-(0.35+Math.random()*1.1),
-    gold:Math.random()<0.85,ph:Math.random()*6.283,tw:1+Math.random(),a:0.8,decay:0.3});}
+    spr:pickRoleSprite(),ph:Math.random()*6.283,tw:1+Math.random(),a:0.8,decay:0.3});}
 }
 function drawParticles(dt,t){
+  const fadeMul=(mode==="warpbloom")?warpTextAlpha:1;   // ワープ中は、最後の開花でだけ粒子も一緒に白へ溶ける
   fx.globalCompositeOperation="lighter";
   for(let i=particles.length-1;i>=0;i--){
     const p=particles[i];
@@ -478,8 +568,8 @@ function drawParticles(dt,t){
     if(p.decay){p.vx*=0.97;p.vy=p.vy*0.97+0.02;p.a-=dt*p.decay;if(p.a<=0){particles.splice(i,1);continue;}}
     else{ if(p.y<-40){p.y=H+40;p.x=Math.random()*W;} if(p.x<-40)p.x=W+40; if(p.x>W+40)p.x=-40; }
     const tw=0.55+0.45*Math.sin(t*p.tw+p.ph), size=7*p.z;
-    fx.globalAlpha=Math.max(0,p.a)*tw;
-    fx.drawImage(p.gold?sprGold:sprBlue,p.x-size,p.y-size,size*2,size*2);
+    fx.globalAlpha=Math.max(0,p.a)*tw*fadeMul;
+    fx.drawImage(p.spr,p.x-size,p.y-size,size*2,size*2);
   }
   fx.globalCompositeOperation="source-over";fx.globalAlpha=1;
 }
@@ -490,14 +580,17 @@ function drawWords(){
   if(mode==="bloom"||mode==="done")return;
   const lines=cfg.phrases,N=lines.length,cx=W/2;
   const topY=Math.max(H*0.14, 60), gap=Math.min(W,H)*0.075, orbY=H*(1-BASE_Y);
-  const p=(mode==="inhaling")?flame.intake:0, seg=1/N;
+  const absorbing=(mode==="inhaling");
   fx.textAlign="center";fx.textBaseline="middle";
   for(let k=0;k<N;k++){
+    if(absorbing && k<flame.absorbed) continue;             // 吸い終えた文（消えている）
     const restY=topY+k*gap;
-    const start=(N-1-k)*seg;                       // 球に近い行（下）から先に吸われる
-    const lp=Math.min(1,Math.max(0,(p-start)/seg));
-    const y=restY+(orbY-restY)*easeIn(lp);         // 天 → 球中心へ降下
-    const a=(mode==="inhaling")?0.92*(1-lp*0.92):0.42;
+    let y=restY, lp=0;
+    if(absorbing && k===flame.absorbed){                    // いま吸っている文（最初から順に）
+      lp=flame.lineProg;
+      y=restY+(orbY-restY)*easeIn(lp);                      // 天 → 球中心へ降下
+    }
+    const a=absorbing?(k===flame.absorbed?0.92*(1-lp*0.9):0.5):0.42;  // 待機は淡く
     if(a<=0.02)continue;
     fx.globalAlpha=a;fx.fillStyle="rgba(224,236,255,1)";
     fx.shadowColor="rgba(150,190,255,.75)";fx.shadowBlur=13;
@@ -518,7 +611,7 @@ function drawFallback(t,scale,cx,cy){
   fx.save();fx.globalCompositeOperation="lighter";fx.globalAlpha=flame.alpha;
   const grd=fx.createRadialGradient(cx,cy,0,cx,cy,R*1.6);
   grd.addColorStop(0,"rgba(255,255,255,0.95)");
-  grd.addColorStop(0.35,cfg.css);
+  layeredStops(currentGrowth(),1.6,0.15).forEach(([o,hex])=>grd.addColorStop(o,hex));
   grd.addColorStop(1,"rgba(0,0,0,0)");
   fx.fillStyle=grd;fx.beginPath();fx.arc(cx,cy,R*1.6,0,6.283);fx.fill();
   fx.restore();fx.globalCompositeOperation="source-over";fx.globalAlpha=1;
@@ -529,6 +622,7 @@ let last=performance.now();
 function frame(now){
   const dt=Math.min(0.05,(now-last)/1000);last=now;const t=now/1000;
   fx.clearRect(0,0,W,H);
+  rpx.clearRect(0,0,W,H);   // ワープは本編のGL描画＋粒子をそのまま使うため、この専用キャンバスはもう使わない
   const cx=W/2, cy=H*(1-BASE_Y);
 
   /* ダイブ：白に満ちる → 「ひとつになっている」→ 文字が消える → 光が中央へ集まり闇の一点に収まる */
@@ -569,37 +663,69 @@ function frame(now){
     requestAnimationFrame(frame); return;
   }
 
-  /* 誘導中：白地に選んだ色の光（呼吸で膨張収縮・徐々に深化） */
+  /* 誘導中：白地に本編と同じ光の玉（テキストと連動し3秒膨張・3秒収縮。膨張率>収縮率でじわじわ育つ） */
   if(mode==="induct"){
-    if(hasGL) gl.clear(gl.COLOR_BUFFER_BIT);
-    inductPulseV+=(-40*inductPulse-9*inductPulseV)*dt; inductPulse+=inductPulseV*dt;
     if(!diving) updateInduction(dt);
-    drawInductOrb(t);
+    const depthNow=inductLightDepth();
+    const baseScale=1+depthNow*1.5;
+    const scale=REST*0.95*baseScale;
+    if(hasGL){
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform2f(U.uRes,glc.width,glc.height);
+      gl.uniform1f(U.uTime,t); gl.uniform1f(U.uScale,scale);
+      gl.uniform1f(U.uAlpha,1); gl.uniform1f(U.uHeat,inductHeat());
+      gl.uniform1f(U.uBaseY,BASE_Y);
+      const growth=currentGrowth();
+      const rb=roleBlend(growth);
+      gl.uniform1f(U.uB1,rb.b1); gl.uniform1f(U.uB2,rb.b2);
+      gl.uniform3f(U.uCore,rb.core[0],rb.core[1],rb.core[2]);
+      gl.uniform3f(U.uSupport,rb.support[0],rb.support[1],rb.support[2]);
+      gl.uniform3f(U.uThema,rb.thema[0],rb.thema[1],rb.thema[2]);
+      gl.drawArrays(gl.TRIANGLES,0,3);
+    }else drawFallback(t,scale,W/2,H*(1-BASE_Y));
     requestAnimationFrame(frame); return;
   }
 
   if(mode!=="setup"){
     if(mode==="inhaling"){
+      const N=cfg.phrases.length, LC=N||1, dur=N?3.0:4.0;   // 1文3秒／言葉なしは4秒で1息
       if(holding){
-        const ease=0.6+0.8*Math.sin(flame.intake*Math.PI);
-        flame.intake+=dt/INHALE_SEC*ease;
-        if(flame.intake>=1){
-          flame.intake=0;flame.count++;flame.pv+=3.4;buzz(18);
-          if(flame.count>=cfg.target)startBloom();
-          else{mode="settle";settleT=0;restNeeded=true;say("もう、ひと息");}
+        flame.lineProg+=dt/dur;
+        if(flame.lineProg>=1){
+          flame.lineProg=0; flame.absorbed++;
+          if(N){flame.pv+=1.3;buzz(14);}                     // 一文を吸うたび、小さく脈打つ
+          if(flame.absorbed>=LC){                            // 全文吸った＝1息完了
+            flame.absorbed=0; flame.count++; flame.pv+=3.4; buzz(20);
+            if(flame.count>=cfg.target)startBloom();
+            else{mode="settle";settleT=0;restNeeded=true;say("もう、ひと息");}
+          }
         }
-      }else{flame.intake-=dt*1.4;if(flame.intake<=0){flame.intake=0;mode="idle";}}
+      }
+      // 離しても巻き戻さない（一時停止・吸った分は保持）
     }
     if(mode==="settle"){settleT+=dt;if(settleT>1.3&&!holding)mode="idle";}
     if(mode==="bloom"){flame.bloom+=dt/2.6;if(flame.bloom>=1){flame.bloom=1;mode="done";}
       if(flame.bloom>0.62)flame.alpha=1-(flame.bloom-0.62)/0.38;}
+    if(mode==="warpbloom"){
+      if(flame.alpha<1) flame.alpha=Math.min(1,flame.alpha+dt/0.8);       // じんわり現れる
+      if(warpTextAlpha<1) warpTextAlpha=Math.min(1,warpTextAlpha+dt/0.8);
+      flame.bloom+=dt/RING_DUR;                 // タイミングだけワープと同じ（5秒）。式は開花とそのまま同じ
+      if(flame.bloom>=1){flame.bloom=1;nextWarpCycle();}
+      if(flame.bloom>0.62){
+        flame.alpha=1-(flame.bloom-0.62)/0.38;
+        if(warpCyclesLeft===0) warpTextAlpha=flame.alpha;                 // 最後のサイクルだけ、文字も一緒に白へ溶ける
+      }
+    }
     if(mode==="done")flame.alpha+=(0-flame.alpha)*dt*0.8;
     flame.pv+=(-42*flame.pulse-9*flame.pv)*dt; flame.pulse+=flame.pv*dt;
 
     const gstep=BLOOM_BIG/Math.max(1,cfg.target);
-    const bloomScale=1+easeOut(flame.bloom)*BLOOM_EXPAND;
-    const scale=REST*(1+gstep*(flame.count+flame.intake))*(1+flame.pulse)*bloomScale;
-    const heat=Math.min(2.0,0.7+0.5*flame.intake+flame.bloom*1.3);
+    const bloomExpandNow=mode==="warpbloom"?WARP_BLOOM_EXPAND:BLOOM_EXPAND;   // ワープは本編よりずっと大きく、画面いっぱいまで広がる
+    const bloomScale=1+easeOut(flame.bloom)*bloomExpandNow;
+    const LCg=cfg.phrases.length||1;
+    const breathFrac=(flame.absorbed+flame.lineProg)/LCg;   // この一息の進み（吸った分）
+    const scale=REST*(1+gstep*(flame.count+breathFrac))*(1+flame.pulse)*bloomScale;
+    const heat=Math.min(2.0,0.7+0.5*breathFrac+flame.bloom*1.3);
     if(!diving) flashEl.style.opacity=Math.min(1,Math.max(0,(flame.bloom-0.4)/0.55));
 
     if(hasGL){
@@ -607,18 +733,26 @@ function frame(now){
       gl.uniform2f(U.uRes,glc.width,glc.height);
       gl.uniform1f(U.uTime,t); gl.uniform1f(U.uScale,scale);
       gl.uniform1f(U.uAlpha,flame.alpha); gl.uniform1f(U.uHeat,heat);
-      gl.uniform1f(U.uBaseY,BASE_Y); gl.uniform3f(U.uColor,cfg.rgb[0],cfg.rgb[1],cfg.rgb[2]);
+      gl.uniform1f(U.uBaseY,BASE_Y);
+      const growth=(flame.count+breathFrac)/Math.max(1,cfg.target);
+      const rb=roleBlend(growth);
+      gl.uniform1f(U.uB1,rb.b1); gl.uniform1f(U.uB2,rb.b2);
+      gl.uniform3f(U.uCore,rb.core[0],rb.core[1],rb.core[2]);
+      gl.uniform3f(U.uSupport,rb.support[0],rb.support[1],rb.support[2]);
+      gl.uniform3f(U.uThema,rb.thema[0],rb.thema[1],rb.thema[2]);
       gl.drawArrays(gl.TRIANGLES,0,3);
     }else drawFallback(t,scale,cx,cy);
 
     drawParticles(dt,t);
     drawWords();
+    drawWarpText(t);
   } else {
     drawParticles(dt,t);   // 設定中も闇に粒が舞う
   }
   requestAnimationFrame(frame);
 }
 
+let bloomTextTimers=[];
 function startBloom(){mode="bloom";flame.bloom=0;buzz([40,60,240]);say("");
   goldRise(W/2,H*(1-BASE_Y));
   const msg=(cfg.closing&&cfg.closing.trim())?cfg.closing.trim():"祈りは、光になった";
@@ -626,8 +760,9 @@ function startBloom(){mode="bloom";flame.bloom=0;buzz([40,60,240]);say("");
   const mn=document.getElementById("ending-main"), sb=document.getElementById("ending-sub");
   mn.innerHTML=esc(msg); sb.textContent="さあ、ゆこう";
   mn.style.opacity=0; sb.style.opacity=0;
-  setTimeout(()=>{ e.classList.add("on"); mn.style.opacity=1; }, 2400);   // 結びが3秒かけてじんわり
-  setTimeout(()=>{ sb.style.opacity=1; }, 2400+3000+2000);                // 3秒フェード＋2秒とどまる後、サブが3秒かけて
+  bloomTextTimers.forEach(clearTimeout); bloomTextTimers=[];
+  bloomTextTimers.push(setTimeout(()=>{ e.classList.add("on"); mn.style.opacity=1; }, 2400));   // 結びが3秒かけてじんわり
+  bloomTextTimers.push(setTimeout(()=>{ sb.style.opacity=1; }, 2400+3000+2000));                // 3秒フェード＋2秒とどまる後、サブが3秒かけて
 }
 function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");}
 function balanceBreak(s){                     // 明示改行は尊重。長い一句は中央付近の区切りで2行に
@@ -638,7 +773,7 @@ function balanceBreak(s){                     // 明示改行は尊重。長い�
 }
 
 /* ---------- 入力 ---------- */
-function pStart(){if(mode==="done")return;
+function pStart(){if(mode==="done"||mode==="return")return;
   if(mode==="idle"){mode="inhaling";say("");}
   if(mode==="settle"&&!restNeeded){mode="inhaling";say("");}
   holding=true;}
@@ -646,21 +781,40 @@ function pEnd(){holding=false;if(mode==="settle")restNeeded=false;}
 fxc.addEventListener("pointerdown",e=>{e.preventDefault();pStart();});
 fxc.addEventListener("pointerup",e=>{e.preventDefault();pEnd();});
 fxc.addEventListener("pointercancel",pEnd);
+let warpCyclesLeft=0;
 document.getElementById("ending").addEventListener("pointerdown",()=>{
   if(mode!=="done")return;
-  mode="return";                                            // 本編描画を止め、白を保つ
+  mode="return";                                            // 本編描画は続くが、白を被せて隠す
   document.getElementById("ending").classList.remove("on");
   document.getElementById("ending-main").style.opacity=0;  // 文字が3秒で消え、真っ白に
   document.getElementById("ending-sub").style.opacity=0;
-  flashEl.style.opacity=1;                                  // 真っ白を保持
-  setTimeout(()=>{                                          // 3秒（真っ白へ）＋ 8秒（白のまま）＝11秒後
-    Object.assign(flame,{count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1}); initParticles();
-    gateGone=false; initGate();                             // 白の下に、闇のトップ（新しい一句）を用意
-    flashEl.style.transition="opacity 3s ease";
-    requestAnimationFrame(()=>{ flashEl.style.opacity=0; });// 3秒かけて白→闇のトップへ
-    setTimeout(()=>{ flashEl.style.transition=""; }, 3200);
-  }, 11000);
+  bloomTextTimers.forEach(clearTimeout); bloomTextTimers=[];  // 予約されていた結び文字の表示タイマーを解除（帰り道に浮かんで出てくるのを防ぐ）
+  document.body.classList.remove("dark");                  // 背景そのものを白に→ワープの合間も黒に戻らない
+  flashEl.style.transition="opacity 3s ease";
+  flashEl.style.opacity=1;
+  setTimeout(()=>{
+    flashEl.style.transition="";
+    warpCyclesLeft=1; nextWarpCycle();        // ビッグバンは1回だけ
+  }, 3000);
 });
+function nextWarpCycle(){
+  if(warpCyclesLeft<=0){ finishReturn(); return; }
+  const isFirst=warpCyclesLeft===3;
+  warpCyclesLeft--;
+  flashEl.style.transition="opacity 0.6s ease";              // 白から、なめらかに元の光へ戻る
+  Object.assign(flame,{count:0,intake:0,absorbed:0,lineProg:0,bloom:0,alpha:0,pulse:0,pv:0});  // 本編の最初の大きさから、じんわり
+  if(isFirst){ initParticles(); warpTextAlpha=0; }            // 粒子と結びの文字は、最初のサイクルだけ新しく
+  buzz([40,60,240]);
+  mode="warpbloom";
+  setTimeout(()=>{ flashEl.style.transition=""; },650);
+}
+function finishReturn(){
+  Object.assign(flame,{count:0,intake:0,absorbed:0,lineProg:0,pulse:0,pv:0,bloom:0,alpha:1}); initParticles();
+  gateGone=false; initGate();                               // 白の下に、闇のトップ（新しい一句）を用意
+  flashEl.style.transition="opacity 3s ease";
+  requestAnimationFrame(()=>{ flashEl.style.opacity=0; });  // 3秒かけて白→闇のトップへ
+  setTimeout(()=>{ flashEl.style.transition=""; }, 3200);
+}
 
 /* ============================================================
    設定
@@ -695,7 +849,10 @@ function resolveColor(str){
   return ("#"+to(m[1])+to(m[2])+to(m[3])).toUpperCase();
 }
 function setColor(hex,keepText){
-  hex=hex.toUpperCase(); cfg.css=hex; cfg.rgb=hexToRgb(hex);
+  hex=hex.toUpperCase();
+  const rgb=hexToRgb(hex);
+  cfg.colors[activeColorRole]={hex,rgb};
+  if(activeColorRole==="core"){ cfg.css=hex; cfg.rgb=rgb; }   // 土台＝本編の色として使用（3色シェーダー実装まではこれが主色）
   if(!keepText){ const hf=document.getElementById("hex"); if(hf) hf.value=hex; }
   const prev=document.getElementById("cprev");
   prev.style.background=hex; prev.style.boxShadow="0 0 28px 7px "+hex+"88";
@@ -710,6 +867,104 @@ function hslToHex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,
   a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));
   const to=x=>Math.round(x*255).toString(16).padStart(2,"0");
   return("#"+to(f(0))+to(f(8))+to(f(4))).toUpperCase();}
+
+/* ---------- 1〜3色（土台／補助／目標）：色数と役割の切り替え ---------- */
+let activeColorRole="core";
+function roleDefaultHex(role,coreHex){
+  const hsl=hexToHsl(coreHex||"#E6863A");
+  if(role==="support") return hslToHex((hsl[0]+40)%360,hsl[1],hsl[2]);
+  if(role==="thema") return hslToHex((hsl[0]+150)%360,hsl[1],hsl[2]);
+  return coreHex||"#E6863A";
+}
+function ensureColorDefaults(){
+  const coreHex=(cfg.colors.core&&cfg.colors.core.hex)||cfg.css||"#E6863A";
+  if(!cfg.colors.core) cfg.colors.core={hex:coreHex,rgb:hexToRgb(coreHex)};
+  if(cfg.colorCount>=2 && !cfg.colors.thema){ const h=roleDefaultHex("thema",coreHex); cfg.colors.thema={hex:h,rgb:hexToRgb(h)}; }
+  if(cfg.colorCount>=3 && !cfg.colors.support){ const h=roleDefaultHex("support",coreHex); cfg.colors.support={hex:h,rgb:hexToRgb(h)}; }
+}
+/* ---------- 球はひとつ・白熱もひとつ：内側から土台→補助→目標へ、それぞれが独立して感じられる配色比率 ----------
+   比率はユーザーが選ぶ（初期値6:1:3）。育つほど土台と目標が入れ替わっていき、育ちきると比率が逆転する。補助の比率は一定。 */
+const RING_BAND=0.02;   // 帯の境界のぼかし幅（狭いほど各色がくっきり独立して見える）
+const RATIO_SQUEEZE_CORE=0.09/1.9, RATIO_SQUEEZE_SUPPORT=0.01/0.1;   // 広がり切ると土台・補助はほぼ消え、目標がほぼ全てを飲み込む
+function roleBlend(growth){
+  const g=Math.max(0,Math.min(1,growth));
+  const core=(cfg.colors.core&&cfg.colors.core.rgb)||cfg.rgb;
+  const cc=cfg.colorCount, r=cfg.ratio;
+  if(cc<=1) return {core,support:core,thema:core,b1:1,b2:1};
+  if(cc===2){
+    const thema=(cfg.colors.thema&&cfg.colors.thema.rgb)||core;
+    const sum2=r.core+r.thema;
+    const coreShare=r.core+(r.core*RATIO_SQUEEZE_CORE-r.core)*g;      // 育つほど土台がほぼ消え、目標が残りを飲み込む
+    const themaShare=sum2-coreShare;
+    const b=coreShare/sum2;
+    return {core,support:core,thema,b1:b,b2:b};
+  }
+  const support=(cfg.colors.support&&cfg.colors.support.rgb)||core;
+  const thema=(cfg.colors.thema&&cfg.colors.thema.rgb)||core;
+  const sum=r.core+r.support+r.thema;
+  const coreRaw=r.core+(r.core*RATIO_SQUEEZE_CORE-r.core)*g;
+  const supportRaw=r.support+(r.support*RATIO_SQUEEZE_SUPPORT-r.support)*g;
+  const coreShare=coreRaw/sum, supportShare=supportRaw/sum;             // 目標は残り全部を吸収して膨らむ
+  return {core,support,thema,b1:coreShare,b2:coreShare+supportShare};
+}
+function currentGrowth(){                                     // 育ち具合（0〜1）：誘導中や結び直後はflame状態がそのまま反映される
+  const LCg=cfg.phrases.length||1;
+  const breathFrac=(flame.absorbed+flame.lineProg)/LCg;
+  return Math.max(0,Math.min(1,(flame.count+breathFrac)/Math.max(1,cfg.target)));
+}
+function effectiveRGB(){                                      // 誘導の光・開花・帰り道など、単色前提の演出用に「今の混ざり具合」を1色に集約
+  const rb=roleBlend(currentGrowth());
+  const wCore=rb.b1, wSupport=Math.max(0,rb.b2-rb.b1), wThema=Math.max(0,1-rb.b2), sum=wCore+wSupport+wThema||1;
+  return [0,1,2].map(i=>(rb.core[i]*wCore+rb.support[i]*wSupport+rb.thema[i]*wThema)/sum);
+}
+function effectiveHex(){
+  const c=effectiveRGB(), to=x=>Math.round(Math.max(0,Math.min(1,x))*255).toString(16).padStart(2,"0");
+  return "#"+to(c[0])+to(c[1])+to(c[2]);
+}
+function rgbToHex(rgb){const to=x=>Math.round(Math.max(0,Math.min(1,x))*255).toString(16).padStart(2,"0");
+  return "#"+to(rgb[0])+to(rgb[1])+to(rgb[2]);}
+function layeredStops(growth,maxOffsetR,coreInnerOffset){        // 土台→補助→目標を"層"として持つグラデーション用の色停止点（2Dキャンバス用）
+  coreInnerOffset=coreInnerOffset||0;
+  const rb=roleBlend(growth);
+  const b1raw=Math.min(0.99,rb.b1/maxOffsetR), b2raw=Math.min(0.995,rb.b2/maxOffsetR);
+  // 白い芯のゾーンはb1に対して比例的に確保する（b1が縮んでも白だけが不自然に広く残らないように）
+  const innerOff=Math.min(coreInnerOffset,b1raw*0.6);
+  const b1=Math.max(innerOff+0.01,b1raw), b2=Math.max(b1+0.01,b2raw);
+  const band=Math.min(RING_BAND/maxOffsetR,(b2-b1)/2,(b1-innerOff)/2);
+  return [
+    [innerOff,rgbToHex(rb.core)],
+    [Math.max(innerOff,b1-band),rgbToHex(rb.core)],
+    [b1+band,rgbToHex(rb.support)],
+    [b2-band,rgbToHex(rb.support)],
+    [Math.min(1,b2+band),rgbToHex(rb.thema)],
+  ];
+}
+function selectRole(role){
+  activeColorRole=role;
+  document.querySelectorAll("#role-seg button").forEach(x=>x.classList.toggle("on",x.dataset.role===role));
+  const c=cfg.colors[role]||{hex:roleDefaultHex(role,cfg.colors.core&&cfg.colors.core.hex)};
+  setColor(c.hex); syncSliders(c.hex); markSwatch(null);
+}
+document.querySelectorAll("#role-seg button").forEach(b=>b.addEventListener("click",()=>selectRole(b.dataset.role)));
+function syncRatioUI(){
+  ["core","support","thema"].forEach(role=>{ document.getElementById("rval-"+role).textContent=cfg.ratio[role].toFixed(1); });
+}
+document.querySelectorAll(".rminus,.rplus").forEach(b=>b.addEventListener("click",()=>{
+  const role=b.dataset.role, delta=b.classList.contains("rplus")?0.1:-0.1;
+  cfg.ratio[role]=Math.round(Math.max(0.1,Math.min(20,cfg.ratio[role]+delta))*10)/10;
+  syncRatioUI();
+}));
+document.querySelectorAll("#ccount-seg button").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll("#ccount-seg button").forEach(x=>x.classList.toggle("on",x===b));
+  cfg.colorCount=+b.dataset.n;
+  ensureColorDefaults();
+  document.getElementById("role-seg").style.display=cfg.colorCount>1?"":"none";
+  document.querySelector('#role-seg button[data-role="support"]').hidden=cfg.colorCount<3;
+  document.getElementById("ratio-wrap").style.display=cfg.colorCount>1?"":"none";
+  document.querySelector('.ratio-row[data-role="support"]').hidden=cfg.colorCount<3;
+  syncRatioUI();
+  selectRole("core");
+}));
 
 const sH=document.getElementById("sH"),sS=document.getElementById("sS"),sL=document.getElementById("sL");
 function paintTracks(){const h=+sH.value;
@@ -781,7 +1036,11 @@ function renderHome(){
   });
 }
 function lightPrayer(p){
-  setColor(p.hex); syncSliders(cfg.css); markSwatch(null);
+  cfg.colorCount=p.colorCount||1;
+  cfg.colors=p.colors?{core:p.colors.core||null,support:p.colors.support||null,thema:p.colors.thema||null}
+                     :{core:{hex:p.hex,rgb:hexToRgb(p.hex)},support:null,thema:null};   // 旧・単色データはCore一色として復元
+  cfg.ratio=p.ratio||{core:6,support:1,thema:3};
+  document.querySelector('#ccount-seg button[data-n="'+cfg.colorCount+'"]').click();   // 色数UI・役割タブ・比率・プレビューを一括で同期
   cfg.words=p.words||""; cfg.phrases=splitPhrases(cfg.words);
   cfg.closing=p.closing||""; cfg.target=p.count||3; cfg.system=p.system||null;
   startInduction();
@@ -789,6 +1048,9 @@ function lightPrayer(p){
 document.getElementById("new-prayer").addEventListener("click",()=>{
   document.getElementById("mantra").value=""; document.getElementById("closing").value="";
   cfg.system=null;
+  cfg.colorCount=1; cfg.colors={core:cfg.colors.core,support:null,thema:null};
+  cfg.ratio={core:1.9,support:0.1,thema:8.0};
+  document.querySelector('#ccount-seg button[data-n="1"]').click();
   saveOn=false; saveToggle.classList.remove("on"); document.getElementById("save-box").textContent="";
   saveNameEl.classList.remove("on"); saveNameEl.value="";
   showStep("color");
@@ -851,14 +1113,15 @@ saveToggle.addEventListener("click",()=>{ saveOn=!saveOn;
 });
 function savePrayer(){
   const name=(saveNameEl.value.trim())||firstLine(cfg.words)||"無題";
-  store.push({name,hex:cfg.css,words:cfg.words||"",closing:cfg.closing||"",count:cfg.target,system:cfg.system||null});
+  store.push({name,hex:cfg.css,colors:cfg.colors,colorCount:cfg.colorCount,ratio:cfg.ratio,
+    words:cfg.words||"",closing:cfg.closing||"",count:cfg.target,system:cfg.system||null});
   if(store.length>10) store.splice(0,store.length-10);   // 10を超えたら古いものから消える
   persist();
 }
 
 /* ---------- 灯す ---------- */
 function beginPractice(){
-  Object.assign(flame,{count:0,intake:0,pulse:0,pv:0,bloom:0,alpha:1});initParticles();
+  Object.assign(flame,{count:0,intake:0,absorbed:0,lineProg:0,pulse:0,pv:0,bloom:0,alpha:1});initParticles();
   document.getElementById("veil").classList.add("hide");mode="idle";
   setTimeout(()=>say(cfg.phrases.length?"灯に触れて、ひと息":"灯に触れて、息を捧げる"),900);
 }
@@ -1006,7 +1269,9 @@ setColor("#E6863A"); syncSliders("#E6863A");
 loadStore(); initGate();
 resize(); initParticles(); window.addEventListener("resize",resize);
 requestAnimationFrame(frame);
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); });
+}
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('service-worker.js').catch(function(){});});}</script>
 </body>
 </html>
