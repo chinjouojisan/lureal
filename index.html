@@ -436,8 +436,8 @@ function buildInductLines(){
     if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t})); });// 深化に系統の一文
   return L;
 }
-function lineTiming(L){ return L.count ? {fin:1.0,fout:1.0} : {fin:FADE,fout:FADE}; }
-function curFade(){ const L=LINES[iIdx]; return (L&&L.count)?1.0:FADE; }   // 3・2・1のカウントは2秒（1秒+1秒）に短縮
+function lineTiming(L){ return L.count ? {fin:1.2,fout:1.2} : {fin:FADE,fout:FADE}; }
+function curFade(){ const L=LINES[iIdx]; return (L&&L.count)?1.2:FADE; }   // 3・2・1のカウントは2.4秒（1.2秒+1.2秒）
 function setupLine(i){
   iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
   inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
