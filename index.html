@@ -630,30 +630,31 @@ function frame(now){
   if(diving){
     diveT+=dt;
     if(divePhase==="flood"){
-      flashEl.style.opacity=Math.min(1,diveT/1.3);
-      inductDepth=3.2*easeInOutSine(Math.min(1,diveT/1.3));    // 光が全体へ広がる（なめらかに）
-      if(diveT>=1.3){ divePhase="whiteHold"; diveT=0; flashEl.style.opacity=1; inductDepth=3.2;
+      flashEl.style.opacity=Math.min(1,diveT/FADE);
+      inductDepth=3.2*easeInOutSine(Math.min(1,diveT/FADE));    // 光が全体へ広がる（誘導と同じ間合いで）
+      if(diveT>=FADE){ divePhase="whiteHold"; diveT=0; flashEl.style.opacity=1; inductDepth=3.2;
         inductTextEl.classList.remove("count"); inductTextEl.classList.add("final");
         inductTextEl.textContent="ひとつになっている"; inductTextEl.style.opacity=0; }
     }else if(divePhase==="whiteHold"){
       flashEl.style.opacity=1;
-      if(diveT>=1.5){ divePhase="finalIn"; diveT=0; }         // 無音の間
+      if(diveT>=2.0){ divePhase="finalIn"; diveT=0; }         // 無音の間
     }else if(divePhase==="finalIn"){
-      inductTextEl.style.opacity=Math.min(1,diveT/3.0);       // 白地にジワッと
-      if(diveT>=3.0){ divePhase="finalHold"; diveT=0; }
+      inductTextEl.style.opacity=Math.min(1,diveT/FADE);      // 白地にジワッと（誘導と同じ間合いで）
+      if(diveT>=FADE){ divePhase="finalHold"; diveT=0; }
     }else if(divePhase==="finalHold"){
-      if(diveT>=2.4){ divePhase="finalOut"; diveT=0; }
+      if(diveT>=3.0){ divePhase="finalOut"; diveT=0; }
     }else if(divePhase==="finalOut"){
-      inductTextEl.style.opacity=Math.max(0,1-diveT/1.5);     // 文字が消える
-      if(diveT>=1.5){ divePhase="converge"; diveT=0; inductEl.classList.remove("on"); }
-    }else if(divePhase==="converge"){ /* 白のまま、光が中央の一点へじんわり集まる。白い覆いも同じペースで引く */
-      const CONVERGE_DUR=3.2, cp=easeInOutSine(Math.min(1,diveT/CONVERGE_DUR));
+      inductTextEl.style.opacity=Math.max(0,1-diveT/FADE);    // 文字が消える（誘導と同じ間合いで）
+      if(diveT>=FADE){ divePhase="converge"; diveT=0; inductEl.classList.remove("on"); }
+    }else if(divePhase==="converge"){ /* 白のまま、光が中央の一点へじっくり集まる。白い覆いも同じペースで引く。終盤ほどゆっくり */
+      const CONVERGE_DUR=5.0, p=Math.min(1,diveT/CONVERGE_DUR),
+            cp=p<0.5?16*p*p*p*p*p:1-Math.pow(-2*p+2,5)/2;         // 両端、特に終盤が極めてゆっくりなイージング
       flashEl.style.opacity=Math.max(0,1-cp);
-      inductDepth=3.2*(1-cp);                                  // 収束（3.2秒、なめらかに）
+      inductDepth=3.2*(1-cp);                                      // 収束（5秒、じっくりなめらかに）
       if(diveT>=CONVERGE_DUR){ divePhase="nightfall"; diveT=0; inductDepth=0; }
-    }else{ /* nightfall：収束のあと、3秒かけて白→闇へジワリ（光は灯ったまま） */
-      nightfallEl.style.opacity=Math.min(1,diveT/3.0);
-      if(diveT>=3.0){ document.body.classList.add("dark"); nightfallEl.style.opacity=0;
+    }else{ /* nightfall：収束のあと、4秒かけて白→闇へジワリ（光は灯ったまま） */
+      nightfallEl.style.opacity=easeInOutSine(Math.min(1,diveT/4.0));
+      if(diveT>=4.0){ document.body.classList.add("dark"); nightfallEl.style.opacity=0;
         diving=false; inductActive=false; beginPractice(); }
     }
   }

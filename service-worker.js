@@ -1,6 +1,6 @@
 // 更新のたびに、この値を上げてください（例: lureal-v1 → lureal-v2）
 // 上げないと、オフライン利用者には古いキャッシュが表示され続けます。
-const CACHE = "lureal-v5";
+const CACHE = "lureal-v7";
 
 const ASSETS = [
   "./",
