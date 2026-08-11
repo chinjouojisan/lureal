@@ -129,6 +129,27 @@
   .counter .n{font-size:40px;letter-spacing:.04em;min-width:64px;text-align:center;color:var(--glow);}
   .counter .n small{font-size:14px;color:var(--ink-faint);margin-left:4px;}
 
+  .il-toggle{display:flex;align-items:center;justify-content:center;gap:10px;margin:16px 0 4px;
+    font-family:var(--sans);font-size:12px;letter-spacing:.1em;color:var(--ink-soft);cursor:pointer;}
+  .il-toggle input{width:18px;height:18px;}
+  #il-editor{display:none;width:100%;max-width:400px;margin-top:12px;}
+  #il-editor.on{display:block;}
+  .il-list{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto;padding:2px;}
+  .il-card{border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;background:rgba(255,255,255,.5);}
+  .il-card textarea{width:100%;box-sizing:border-box;border:none;background:transparent;resize:none;
+    font-family:var(--mincho);font-size:14px;color:var(--ink);line-height:1.5;padding:0;margin-bottom:6px;}
+  .il-row2{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11px;color:var(--ink-faint);}
+  .il-row2 input[type=number]{width:52px;border:1px solid var(--line);border-radius:8px;padding:4px 6px;
+    font-family:var(--sans);font-size:12px;text-align:center;background:transparent;color:var(--ink);}
+  .il-row2 label{display:flex;align-items:center;gap:4px;}
+  .il-btns{margin-left:auto;display:flex;gap:4px;}
+  .il-btns button{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:transparent;
+    color:var(--ink-soft);font-size:13px;cursor:pointer;line-height:1;}
+  .il-btns button:active{background:var(--glow);color:var(--void-0);}
+  .il-actions{display:flex;justify-content:center;gap:10px;margin-top:12px;}
+  .il-actions button{font-family:var(--sans);font-size:11px;letter-spacing:.08em;color:var(--ink-soft);
+    background:transparent;border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer;}
+
   .go{margin-top:36px;font-family:var(--mincho);font-size:15px;letter-spacing:.34em;color:var(--glow);
     background:transparent;border:1px solid var(--glow);border-radius:999px;padding:15px 44px;cursor:pointer;transition:.2s;
     box-shadow:0 0 20px rgba(160,195,255,.18);}
@@ -298,12 +319,17 @@
     </div>
     <div class="hint">数は表に出ません。球の育ちが、あなたの数です</div>
 
-    <div class="seg induct-seg" id="tempo-seg">
-      <button data-t="0">ゆっくり</button>
-      <button data-t="1" class="on">ふつう</button>
-      <button data-t="2">はやい</button>
+    <div class="il-toggle" id="il-toggle-wrap">
+      <input type="checkbox" id="il-toggle">
+      <label for="il-toggle">誘導文をカスタマイズする</label>
     </div>
-    <div class="hint">誘導の速さ</div>
+    <div id="il-editor">
+      <div class="il-list" id="il-list"></div>
+      <div class="il-actions">
+        <button id="il-add">＋ 行を追加</button>
+        <button id="il-reset">デフォルトに戻す</button>
+      </div>
+    </div>
 
     <div class="save-row">
       <div class="save-toggle" id="save-toggle"><span class="box" id="save-box"></span>この祈りを覚えておく</div>
@@ -337,7 +363,7 @@ function resize(){
 }
 
 const cfg={ rgb:[0.90,0.525,0.227], target:3, phrases:[], css:"#E6863A", closing:"", system:null,
-  colors:{core:null,support:null,thema:null}, colorCount:1, ratio:{core:1.9,support:0.1,thema:8.0} };
+  colors:{core:null,support:null,thema:null}, colorCount:1, ratio:{core:1.9,support:0.1,thema:8.0}, inductLines:null };
 
 /* ---------- WebGL 炎（乱流ノイズ・発光） ---------- */
 let gl=null, prog=null, U={};
@@ -431,13 +457,13 @@ let LINES=BASE_LINES;
 function buildInductLines(){
   const sys=SYSTEMS.find(s=>s.key===cfg.system);
   const L=[];
-  if(sys) L.push({t:sys.mei, mei:1});                                  // 銘＝入口の一言
-  BASE_LINES.forEach((ln,i)=>{ L.push(ln);
-    if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t})); });// 深化に系統の一文
+  if(sys) L.push({t:sys.mei, mei:1, dur:FADE*2});                       // 銘＝入口の一言
+  BASE_LINES.forEach((ln,i)=>{ L.push({...ln, dur: ln.count?3:FADE*2});
+    if(i===15 && sys && sys.deep) sys.deep.forEach(t=>L.push({t, dur:FADE*2})); });// 深化に系統の一文
   return L;
 }
-function lineTiming(L){ return L.count ? {fin:1.5,fout:1.5} : {fin:FADE,fout:FADE}; }
-function curFade(){ const L=LINES[iIdx]; return (L&&L.count)?1.5:FADE; }   // 3・2・1のカウントは3秒（1.5秒+1.5秒）
+function lineTiming(L){ const d=(L&&typeof L.dur==="number")?L.dur:(L&&L.count?3:FADE*2); return {fin:d/2,fout:d/2}; }
+function curFade(){ const L=LINES[iIdx]; return L?lineTiming(L).fin:FADE; }   // 各行のdur（合計時間）を半分に分けてfin/foutにする
 function setupLine(i){
   iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
   inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
@@ -468,8 +494,7 @@ function inductHeat(){                                    // 膨張の頂点で�
 }
 function startInduction(){
   inductActive=true; inductLevel=0; inductPeak=INDUCT_EXPAND; diving=false;
-  inductBreath=TEMPO[inductTempo].breath;
-  LINES=buildInductLines();                          // 系統で味付け（銘＋深化の一文）
+  LINES=(cfg.inductLines&&cfg.inductLines.length)?cfg.inductLines.map(l=>({...l})):buildInductLines();  // カスタムがあればそちらを使う
   document.getElementById("veil").classList.add("hide");
   document.body.classList.remove("dark");
   inductEl.classList.add("on");
@@ -1021,6 +1046,7 @@ function firstLine(t){ if(!t)return""; const l=t.split(/\n/).map(s=>s.trim()).fi
 function splitPhrases(raw){ return raw?raw.split(/[、。\n\r,.!?！？　]+/).map(s=>s.trim()).filter(Boolean):[]; }
 
 /* ---------- ホーム（保存した祈り一覧） ---------- */
+let editingIndex=-1;
 function renderHome(){
   const list=document.getElementById("prayer-list"); list.innerHTML="";
   if(!store.length){ const d=document.createElement("div"); d.className="empty-note";
@@ -1030,13 +1056,34 @@ function renderHome(){
     const dot=document.createElement("span"); dot.className="pd";
     dot.style.background=p.hex; dot.style.boxShadow="0 0 12px 2px "+p.hex+"aa";
     const nm=document.createElement("span"); nm.className="pn"; nm.textContent=p.name||"無題";
+    const edit=document.createElement("button"); edit.className="px"; edit.textContent="✎";
     const del=document.createElement("button"); del.className="px"; del.textContent="×";
-    row.appendChild(dot); row.appendChild(nm); row.appendChild(del);
+    row.appendChild(dot); row.appendChild(nm); row.appendChild(edit); row.appendChild(del);
     row.addEventListener("click",()=>lightPrayer(p));
+    edit.addEventListener("click",e=>{e.stopPropagation();editPrayer(p,i);});
     del.addEventListener("click",e=>{e.stopPropagation();store.splice(i,1);persist();renderHome();
       if(!store.length)showStep("color");});
     list.appendChild(row);
   });
+}
+function editPrayer(p,i){
+  editingIndex=i;
+  cfg.colorCount=p.colorCount||1;
+  cfg.colors=p.colors?{core:p.colors.core||null,support:p.colors.support||null,thema:p.colors.thema||null}
+                     :{core:{hex:p.hex,rgb:hexToRgb(p.hex)},support:null,thema:null};
+  cfg.ratio=p.ratio||{core:1.9,support:0.1,thema:8.0};
+  document.querySelector('#ccount-seg button[data-n="'+cfg.colorCount+'"]').click();
+  cfg.words=p.words||""; cfg.phrases=splitPhrases(cfg.words);
+  cfg.closing=p.closing||""; cfg.target=p.count||3; cfg.system=p.system||null;
+  cfg.inductLines=p.inductLines&&p.inductLines.length?p.inductLines.map(l=>({...l})):null;
+  document.getElementById("mantra").value=cfg.words;
+  document.getElementById("closing").value=cfg.closing;
+  target=cfg.target; document.getElementById("count-n").textContent=target;
+  saveNameEl.value=p.name||""; saveNameEl.classList.add("on"); saveOn=true; saveToggle.classList.add("on");
+  document.getElementById("il-toggle").checked=!!cfg.inductLines;
+  document.getElementById("il-editor").classList.toggle("on",!!cfg.inductLines);
+  if(cfg.inductLines){ ilLines=cfg.inductLines.map(l=>({...l})); ilRender(); }
+  showStep("color");
 }
 function lightPrayer(p){
   cfg.colorCount=p.colorCount||1;
@@ -1046,6 +1093,7 @@ function lightPrayer(p){
   document.querySelector('#ccount-seg button[data-n="'+cfg.colorCount+'"]').click();   // 色数UI・役割タブ・比率・プレビューを一括で同期
   cfg.words=p.words||""; cfg.phrases=splitPhrases(cfg.words);
   cfg.closing=p.closing||""; cfg.target=p.count||3; cfg.system=p.system||null;
+  cfg.inductLines=p.inductLines&&p.inductLines.length?p.inductLines.map(l=>({...l})):null;
   startInduction();
 }
 document.getElementById("new-prayer").addEventListener("click",()=>{
@@ -1056,6 +1104,8 @@ document.getElementById("new-prayer").addEventListener("click",()=>{
   document.querySelector('#ccount-seg button[data-n="1"]').click();
   saveOn=false; saveToggle.classList.remove("on"); document.getElementById("save-box").textContent="";
   saveNameEl.classList.remove("on"); saveNameEl.value="";
+  cfg.inductLines=null; ilLines=null; editingIndex=-1;
+  document.getElementById("il-toggle").checked=false; document.getElementById("il-editor").classList.remove("on");
   showStep("color");
 });
 
@@ -1099,10 +1149,52 @@ buildChips("closing-chips","closes","closing");
 let target=3;const cn=document.getElementById("count-n");
 document.getElementById("minus").addEventListener("click",()=>{target=Math.max(1,target-1);cn.textContent=target;});
 document.getElementById("plus").addEventListener("click",()=>{target=Math.min(10,target+1);cn.textContent=target;});
-document.querySelectorAll("#tempo-seg button").forEach(b=>b.addEventListener("click",()=>{
-  document.querySelectorAll("#tempo-seg button").forEach(x=>x.classList.toggle("on",x===b));
-  inductTempo=+b.dataset.t;
-}));
+
+/* ---------- 誘導文のカスタム編集 ---------- */
+let ilLines=null;   // null=デフォルトのまま。配列=カスタム編集中
+function ilDefaultLines(){
+  return buildInductLines().map(l=>({t:l.t, dur:(typeof l.dur==="number")?l.dur:(l.count?3:FADE*2), count:!!l.count}));
+}
+function ilRender(){
+  const wrap=document.getElementById("il-list");
+  wrap.innerHTML="";
+  ilLines.forEach((ln,i)=>{
+    const card=document.createElement("div"); card.className="il-card";
+    card.innerHTML=
+      '<textarea rows="2" data-i="'+i+'" class="il-text">'+esc(ln.t)+'</textarea>'+
+      '<div class="il-row2">'+
+        '<label>時間<input type="number" min="1" max="60" step="0.5" class="il-dur" data-i="'+i+'" value="'+ln.dur+'">秒</label>'+
+        '<label><input type="checkbox" class="il-count" data-i="'+i+'" '+(ln.count?"checked":"")+'>カウント表示</label>'+
+        '<div class="il-btns">'+
+          '<button class="il-up" data-i="'+i+'">↑</button>'+
+          '<button class="il-down" data-i="'+i+'">↓</button>'+
+          '<button class="il-del" data-i="'+i+'">×</button>'+
+        '</div>'+
+      '</div>';
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll(".il-text").forEach(el=>el.addEventListener("input",e=>{ ilLines[+e.target.dataset.i].t=e.target.value; }));
+  wrap.querySelectorAll(".il-dur").forEach(el=>el.addEventListener("input",e=>{ ilLines[+e.target.dataset.i].dur=Math.max(1,+e.target.value||1); }));
+  wrap.querySelectorAll(".il-count").forEach(el=>el.addEventListener("change",e=>{ ilLines[+e.target.dataset.i].count=e.target.checked; }));
+  wrap.querySelectorAll(".il-del").forEach(el=>el.addEventListener("click",e=>{ ilLines.splice(+e.target.dataset.i,1); ilRender(); }));
+  wrap.querySelectorAll(".il-up").forEach(el=>el.addEventListener("click",e=>{ const i=+e.target.dataset.i; if(i>0){ [ilLines[i-1],ilLines[i]]=[ilLines[i],ilLines[i-1]]; ilRender(); } }));
+  wrap.querySelectorAll(".il-down").forEach(el=>el.addEventListener("click",e=>{ const i=+e.target.dataset.i; if(i<ilLines.length-1){ [ilLines[i+1],ilLines[i]]=[ilLines[i],ilLines[i+1]]; ilRender(); } }));
+}
+document.getElementById("il-toggle").addEventListener("change",e=>{
+  document.getElementById("il-editor").classList.toggle("on",e.target.checked);
+  if(e.target.checked){
+    ilLines=(cfg.inductLines&&cfg.inductLines.length)?cfg.inductLines.map(l=>({...l})):ilDefaultLines();
+    ilRender();
+  }else{
+    cfg.inductLines=null; ilLines=null;
+  }
+});
+document.getElementById("il-add").addEventListener("click",()=>{
+  ilLines.push({t:"あたらしい一文",dur:FADE*2,count:false}); ilRender();
+});
+document.getElementById("il-reset").addEventListener("click",()=>{
+  ilLines=ilDefaultLines(); ilRender();
+});
 
 /* ---------- 保存トグル＋手動命名 ---------- */
 let saveOn=false;
@@ -1116,9 +1208,11 @@ saveToggle.addEventListener("click",()=>{ saveOn=!saveOn;
 });
 function savePrayer(){
   const name=(saveNameEl.value.trim())||firstLine(cfg.words)||"無題";
-  store.push({name,hex:cfg.css,colors:cfg.colors,colorCount:cfg.colorCount,ratio:cfg.ratio,
-    words:cfg.words||"",closing:cfg.closing||"",count:cfg.target,system:cfg.system||null});
-  if(store.length>10) store.splice(0,store.length-10);   // 10を超えたら古いものから消える
+  const entry={name,hex:cfg.css,colors:cfg.colors,colorCount:cfg.colorCount,ratio:cfg.ratio,
+    words:cfg.words||"",closing:cfg.closing||"",count:cfg.target,system:cfg.system||null,
+    inductLines:cfg.inductLines?cfg.inductLines.map(l=>({...l})):null};
+  if(editingIndex>=0&&editingIndex<store.length){ store[editingIndex]=entry; editingIndex=-1; }  // 編集中なら上書き
+  else{ store.push(entry); if(store.length>10) store.splice(0,store.length-10); }                // 10を超えたら古いものから消える
   persist();
 }
 
@@ -1133,6 +1227,7 @@ document.getElementById("begin").addEventListener("click",()=>{
   cfg.phrases=splitPhrases(cfg.words);
   cfg.closing=document.getElementById("closing").value.trim();
   cfg.target=target;
+  if(document.getElementById("il-toggle").checked && ilLines) cfg.inductLines=ilLines.map(l=>({...l}));
   if(saveOn) savePrayer();
   startInduction();
 });
