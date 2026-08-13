@@ -496,6 +496,7 @@ function inductHeat(){                                    // 膨張の頂点で�
 }
 let finalLine={t:"ひとつになっている", dur:FADE*2};   // カウント後、ダイブで白地に浮かぶ文（デフォルト）
 function startInduction(){
+  if(document.activeElement) document.activeElement.blur();   // 入力欄のフォーカスが残っていると、画面がズレる原因になるため
   inductActive=true; inductLevel=0; inductPeak=INDUCT_EXPAND; diving=false;
   const raw=(cfg.inductLines&&cfg.inductLines.length)?cfg.inductLines.map(l=>({...l})):buildInductLines();  // カスタムがあればそちらを使う
   const fIdx=raw.findIndex(l=>l.final);
@@ -517,7 +518,9 @@ function inductSkip(){ if(!inductActive||diving)return; diveStart(); }
 let collapseFrom=0;
 function diveStart(){ if(diving)return; collapseFrom=inductLightDepth(); diving=true; diveT=0; divePhase="collapse";
   inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0"; buzz([30,50,200]); }
-inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return; inductAdvance(); });
+inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return;
+  if(document.activeElement&&document.activeElement!==document.body) document.activeElement.blur();
+  inductAdvance(); });
 inductSkipEl.addEventListener("pointerdown",e=>{ e.stopPropagation(); inductSkip(); });
 /* ---------- 帰り道：開花をそのまま3回繰り返す（本編のGL描画・粒子をそのまま流用） ---------- */
 const RING_DUR=21.05;   // 広がりきってから真っ白まで8秒になるよう調整（(1-0.62)*21.05≈8秒）
