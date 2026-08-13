@@ -136,6 +136,8 @@
   #il-editor.on{display:block;}
   .il-list{display:flex;flex-direction:column;gap:8px;max-height:44vh;overflow-y:auto;padding:2px;}
   .il-card{border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;background:rgba(255,255,255,.5);}
+  .il-card.il-final{border-color:var(--glow);background:rgba(140,160,230,.08);}
+  .il-final-tag{font-family:var(--sans);font-size:10px;letter-spacing:.08em;color:var(--glow);margin-bottom:6px;}
   .il-card textarea{width:100%;box-sizing:border-box;border:none;background:transparent;resize:none;
     font-family:var(--mincho);font-size:14px;color:var(--ink);line-height:1.5;padding:0;margin-bottom:6px;}
   .il-row2{display:flex;align-items:center;gap:8px;font-family:var(--sans);font-size:11px;color:var(--ink-faint);}
@@ -492,9 +494,13 @@ function inductHeat(){                                    // 膨張の頂点で�
   const p=Math.min(1,iT/curFade()), e=easeInOutSine(p);
   return iPhase==="in" ? (0.7+0.7*e) : (0.7+0.7*(1-e));
 }
+let finalLine={t:"ひとつになっている", dur:FADE*2};   // カウント後、ダイブで白地に浮かぶ文（デフォルト）
 function startInduction(){
   inductActive=true; inductLevel=0; inductPeak=INDUCT_EXPAND; diving=false;
-  LINES=(cfg.inductLines&&cfg.inductLines.length)?cfg.inductLines.map(l=>({...l})):buildInductLines();  // カスタムがあればそちらを使う
+  const raw=(cfg.inductLines&&cfg.inductLines.length)?cfg.inductLines.map(l=>({...l})):buildInductLines();  // カスタムがあればそちらを使う
+  const fIdx=raw.findIndex(l=>l.final);
+  if(fIdx>=0){ finalLine={t:raw[fIdx].t,dur:raw[fIdx].dur}; LINES=raw.filter((l,i)=>i!==fIdx); }            // 最後の文は別枠へ、通常の巡回からは外す
+  else{ finalLine={t:"ひとつになっている", dur:FADE*2}; LINES=raw; }
   document.getElementById("veil").classList.add("hide");
   document.body.classList.remove("dark");
   inductEl.classList.add("on");
@@ -508,7 +514,8 @@ function inductAdvance(){
   else nextLine();                                                                                          // 次の文へ
 }
 function inductSkip(){ if(!inductActive||diving)return; diveStart(); }
-function diveStart(){ if(diving)return; diving=true; diveT=0; divePhase="flood";
+let collapseFrom=0;
+function diveStart(){ if(diving)return; collapseFrom=inductLightDepth(); diving=true; diveT=0; divePhase="collapse";
   inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0"; buzz([30,50,200]); }
 inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return; inductAdvance(); });
 inductSkipEl.addEventListener("pointerdown",e=>{ e.stopPropagation(); inductSkip(); });
@@ -651,26 +658,30 @@ function frame(now){
   rpx.clearRect(0,0,W,H);   // ワープは本編のGL描画＋粒子をそのまま使うため、この専用キャンバスはもう使わない
   const cx=W/2, cy=H*(1-BASE_Y);
 
-  /* ダイブ：白に満ちる → 「ひとつになっている」→ 文字が消える → 光が中央へ集まり闇の一点に収まる */
+  /* ダイブ：一度、光を一点へなめらかに収束 → 白に満ちる → 「ひとつになっている」→ 文字が消える → 光が中央へ集まり闇の一点に収まる */
   if(diving){
     diveT+=dt;
-    if(divePhase==="flood"){
+    if(divePhase==="collapse"){ /* カウント後の今の大きさから、じんわり一点へ。ここから改めて広がることで、パッと切り替わらない */
+      const COLLAPSE_DUR=2.6, cp=easeInOutSine(Math.min(1,diveT/COLLAPSE_DUR));
+      inductDepth=collapseFrom*(1-cp);
+      if(diveT>=COLLAPSE_DUR){ divePhase="flood"; diveT=0; inductDepth=0; }
+    }else if(divePhase==="flood"){
       flashEl.style.opacity=Math.min(1,diveT/FADE);
       inductDepth=3.2*easeInOutSine(Math.min(1,diveT/FADE));    // 光が全体へ広がる（誘導と同じ間合いで）
       if(diveT>=FADE){ divePhase="whiteHold"; diveT=0; flashEl.style.opacity=1; inductDepth=3.2;
         inductTextEl.classList.remove("count"); inductTextEl.classList.add("final");
-        inductTextEl.textContent="ひとつになっている"; inductTextEl.style.opacity=0; }
+        inductTextEl.textContent=finalLine.t; inductTextEl.style.opacity=0; }
     }else if(divePhase==="whiteHold"){
       flashEl.style.opacity=1;
       if(diveT>=2.0){ divePhase="finalIn"; diveT=0; }         // 無音の間
     }else if(divePhase==="finalIn"){
-      inductTextEl.style.opacity=Math.min(1,diveT/FADE);      // 白地にジワッと（誘導と同じ間合いで）
-      if(diveT>=FADE){ divePhase="finalHold"; diveT=0; }
+      inductTextEl.style.opacity=Math.min(1,diveT/(finalLine.dur/2));   // 白地にジワッと（編集可能な時間で）
+      if(diveT>=finalLine.dur/2){ divePhase="finalHold"; diveT=0; }
     }else if(divePhase==="finalHold"){
       if(diveT>=3.0){ divePhase="finalOut"; diveT=0; }
     }else if(divePhase==="finalOut"){
-      inductTextEl.style.opacity=Math.max(0,1-diveT/FADE);    // 文字が消える（誘導と同じ間合いで）
-      if(diveT>=FADE){ divePhase="converge"; diveT=0; inductEl.classList.remove("on"); }
+      inductTextEl.style.opacity=Math.max(0,1-diveT/(finalLine.dur/2)); // 文字が消える（編集可能な時間で）
+      if(diveT>=finalLine.dur/2){ divePhase="converge"; diveT=0; inductEl.classList.remove("on"); }
     }else if(divePhase==="converge"){ /* 白のまま、光が中央の一点へじっくり集まる。白い覆いも同じペースで引く。終盤ほどゆっくり */
       const CONVERGE_DUR=5.0, p=Math.min(1,diveT/CONVERGE_DUR),
             cp=p<0.5?16*p*p*p*p*p:1-Math.pow(-2*p+2,5)/2;         // 両端、特に終盤が極めてゆっくりなイージング
@@ -1153,18 +1164,22 @@ document.getElementById("plus").addEventListener("click",()=>{target=Math.min(10
 /* ---------- 誘導文のカスタム編集 ---------- */
 let ilLines=null;   // null=デフォルトのまま。配列=カスタム編集中
 function ilDefaultLines(){
-  return buildInductLines().map(l=>({t:l.t, dur:(typeof l.dur==="number")?l.dur:(l.count?3:FADE*2), count:!!l.count}));
+  const base=buildInductLines().map(l=>({t:l.t, dur:(typeof l.dur==="number")?l.dur:(l.count?3:FADE*2), count:!!l.count, final:false}));
+  base.push({t:"ひとつになっている", dur:FADE*2, count:false, final:true});   // カウント後、ダイブで白地に浮かぶ文
+  return base;
 }
 function ilRender(){
   const wrap=document.getElementById("il-list");
   wrap.innerHTML="";
   ilLines.forEach((ln,i)=>{
-    const card=document.createElement("div"); card.className="il-card";
+    const card=document.createElement("div"); card.className="il-card"+(ln.final?" il-final":"");
     card.innerHTML=
+      (ln.final?'<div class="il-final-tag">カウントの後、白地に浮かぶ文</div>':'')+
       '<textarea rows="2" data-i="'+i+'" class="il-text">'+esc(ln.t)+'</textarea>'+
       '<div class="il-row2">'+
         '<label>時間<input type="number" min="1" max="60" step="0.5" class="il-dur" data-i="'+i+'" value="'+ln.dur+'">秒</label>'+
-        '<label><input type="checkbox" class="il-count" data-i="'+i+'" '+(ln.count?"checked":"")+'>カウント表示</label>'+
+        (ln.final?'':'<label><input type="checkbox" class="il-count" data-i="'+i+'" '+(ln.count?"checked":"")+'>カウント表示</label>')+
+        '<label><input type="checkbox" class="il-final" data-i="'+i+'" '+(ln.final?"checked":"")+'>これを最後の文に</label>'+
         '<div class="il-btns">'+
           '<button class="il-up" data-i="'+i+'">↑</button>'+
           '<button class="il-down" data-i="'+i+'">↓</button>'+
@@ -1176,6 +1191,12 @@ function ilRender(){
   wrap.querySelectorAll(".il-text").forEach(el=>el.addEventListener("input",e=>{ ilLines[+e.target.dataset.i].t=e.target.value; }));
   wrap.querySelectorAll(".il-dur").forEach(el=>el.addEventListener("input",e=>{ ilLines[+e.target.dataset.i].dur=Math.max(1,+e.target.value||1); }));
   wrap.querySelectorAll(".il-count").forEach(el=>el.addEventListener("change",e=>{ ilLines[+e.target.dataset.i].count=e.target.checked; }));
+  wrap.querySelectorAll(".il-final").forEach(el=>el.addEventListener("change",e=>{
+    const i=+e.target.dataset.i;
+    if(e.target.checked){ ilLines.forEach((l,j)=>{ l.final=(j===i); if(l.final) l.count=false; }); }
+    else{ ilLines[i].final=false; }
+    ilRender();
+  }));
   wrap.querySelectorAll(".il-del").forEach(el=>el.addEventListener("click",e=>{ ilLines.splice(+e.target.dataset.i,1); ilRender(); }));
   wrap.querySelectorAll(".il-up").forEach(el=>el.addEventListener("click",e=>{ const i=+e.target.dataset.i; if(i>0){ [ilLines[i-1],ilLines[i]]=[ilLines[i],ilLines[i-1]]; ilRender(); } }));
   wrap.querySelectorAll(".il-down").forEach(el=>el.addEventListener("click",e=>{ const i=+e.target.dataset.i; if(i<ilLines.length-1){ [ilLines[i+1],ilLines[i]]=[ilLines[i],ilLines[i+1]]; ilRender(); } }));
