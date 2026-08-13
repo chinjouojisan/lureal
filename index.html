@@ -1087,6 +1087,9 @@ function editPrayer(p,i){
   cfg.words=p.words||""; cfg.phrases=splitPhrases(cfg.words);
   cfg.closing=p.closing||""; cfg.target=p.count||3; cfg.system=p.system||null;
   cfg.inductLines=p.inductLines&&p.inductLines.length?p.inductLines.map(l=>({...l})):null;
+  if(cfg.inductLines&&!cfg.inductLines.some(l=>l.final)){
+    cfg.inductLines.push({t:"ひとつになっている",dur:FADE*2,count:false,final:true});  // 旧データ互換：最後の文が無ければ補う
+  }
   document.getElementById("mantra").value=cfg.words;
   document.getElementById("closing").value=cfg.closing;
   target=cfg.target; document.getElementById("count-n").textContent=target;
