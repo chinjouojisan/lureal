@@ -1395,6 +1395,11 @@ requestAnimationFrame(frame);
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); });
 }
+// iOS Safariのアドレスバー開閉で画面がズレるのを抑制（スクロールが必要な場所は妨げない）
+document.addEventListener("touchmove",e=>{
+  if(e.target.closest(".veil, .il-list, textarea")) return;
+  e.preventDefault();
+},{passive:false});
 </script>
 </body>
 </html>
