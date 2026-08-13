@@ -471,7 +471,7 @@ function setupLine(i){
   inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
   inductTextEl.classList.toggle("count", !!L.count); inductTextEl.classList.remove("final");
   inductTextEl.classList.toggle("mei", !!L.mei);
-  inductTextEl.innerHTML=esc(L.t); inductTextEl.style.opacity=0;
+  inductTextEl.innerHTML=esc(balanceBreak(L.t)); inductTextEl.style.opacity=0;
 }
 function nextLine(){ if(iIdx+1>=LINES.length){ diveStart(); return; } setupLine(iIdx+1); }
 function updateInduction(dt){
@@ -673,7 +673,7 @@ function frame(now){
       inductDepth=3.2*easeInOutSine(Math.min(1,diveT/FADE));    // 光が全体へ広がる（誘導と同じ間合いで）
       if(diveT>=FADE){ divePhase="whiteHold"; diveT=0; flashEl.style.opacity=1; inductDepth=3.2;
         inductTextEl.classList.remove("count"); inductTextEl.classList.add("final");
-        inductTextEl.textContent=finalLine.t; inductTextEl.style.opacity=0; }
+        inductTextEl.innerHTML=esc(balanceBreak(finalLine.t)); inductTextEl.style.opacity=0; }
     }else if(divePhase==="whiteHold"){
       flashEl.style.opacity=1;
       if(diveT>=2.0){ divePhase="finalIn"; diveT=0; }         // 無音の間
