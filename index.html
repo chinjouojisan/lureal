@@ -469,8 +469,10 @@ function curFade(){ const L=LINES[iIdx]; return L?lineTiming(L).fin:FADE; }   //
 function setupLine(i){
   iIdx=i; iPhase="in"; iT=0; const L=LINES[i];
   inductPeak=inductLevel+INDUCT_EXPAND+(L.count?0.25:0);   // 数を数える行は、少し大きめに膨らむ
-  inductTextEl.classList.toggle("count", !!L.count); inductTextEl.classList.remove("final");
-  inductTextEl.classList.toggle("mei", !!L.mei);
+  const wantCount=!!L.count, wantMei=!!L.mei;               // 変化がない時は書き換えない（無駄な再計算を避ける）
+  if(inductTextEl.classList.contains("count")!==wantCount) inductTextEl.classList.toggle("count",wantCount);
+  if(inductTextEl.classList.contains("final")) inductTextEl.classList.remove("final");
+  if(inductTextEl.classList.contains("mei")!==wantMei) inductTextEl.classList.toggle("mei",wantMei);
   inductTextEl.innerHTML=esc(balanceBreak(L.t)); inductTextEl.style.opacity=0;
 }
 function nextLine(){ if(iIdx+1>=LINES.length){ diveStart(); return; } setupLine(iIdx+1); }
@@ -487,7 +489,7 @@ function updateInduction(dt){
 function easeInOutSine(p){ return 0.5-0.5*Math.cos(Math.PI*p); }   // 両端で速度ゼロ→切り替わりでカクッとならない
 function inductLightDepth(){                             // 光の膨張・収縮（テキストのfin/foutと連動）
   const p=Math.min(1,iT/curFade()), e=easeInOutSine(p);
-  if(iPhase==="in") return inductLevel+INDUCT_EXPAND*e;
+  if(iPhase==="in") return inductLevel+(inductPeak-inductLevel)*e;   // inductLevelからinductPeakへ（カウントのボーナス込みで一致させる）
   return inductPeak-INDUCT_CONTRACT*e;
 }
 function inductHeat(){                                    // 膨張の頂点で白熱が増し、土台・補助の色を飲み込む（目標色は外側に必ず残す）
@@ -517,7 +519,9 @@ function inductAdvance(){
 function inductSkip(){ if(!inductActive||diving)return; diveStart(); }
 let collapseFrom=0;
 function diveStart(){ if(diving)return; collapseFrom=inductLightDepth(); diving=true; diveT=0; divePhase="collapse";
-  inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0"; buzz([30,50,200]); }
+  inductDepth=collapseFrom;   // このフレームのうちに反映（次フレーム待ちだと1フレームだけ古い値が見えてしまう）
+  inductTextEl.style.opacity=0; inductSkipEl.style.opacity="0";
+  setTimeout(()=>buzz([30,50,200]),0); }   // 振動はアニメーションのフレームをブロックしないよう、少し遅らせて呼ぶ
 inductEl.addEventListener("pointerdown",e=>{ if(e.target===inductSkipEl)return;
   if(document.activeElement&&document.activeElement!==document.body) document.activeElement.blur();
   inductAdvance(); });
@@ -846,7 +850,7 @@ function nextWarpCycle(){
   flashEl.style.transition="opacity 0.6s ease";              // 白から、なめらかに元の光へ戻る
   Object.assign(flame,{count:0,intake:0,absorbed:0,lineProg:0,bloom:0,alpha:0,pulse:0,pv:0});  // 本編の最初の大きさから、じんわり
   if(isFirst){ initParticles(); warpTextAlpha=0; }            // 粒子と結びの文字は、最初のサイクルだけ新しく
-  buzz([40,60,240]);
+  setTimeout(()=>buzz([40,60,240]),0);
   mode="warpbloom";
   setTimeout(()=>{ flashEl.style.transition=""; },650);
 }
